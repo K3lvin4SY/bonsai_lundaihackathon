@@ -149,7 +149,7 @@ Get the full milestone tree (DAG), branch list, and flat milestone array for a p
 
 Create the first milestone for a project. Copies binary files to the base folder, initialises Git, builds `.gitignore`, creates `global_registry.json`, and commits `commit_state.json`.
 
-* **Call:** `await window.electronAPI.milestoneCreateInitial(projectPath, targetPath, message)`
+* **Call:** `await window.electronAPI.milestoneCreateInitial(projectPath, message)`
 * **Returns:** `{ milestoneId: string }`
 
 ### `milestone:create`

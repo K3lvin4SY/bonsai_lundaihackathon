@@ -26,7 +26,7 @@ Expose these async methods. If `window.electronAPI` exists, call it. Otherwise, 
 - `projectDelete(projectPath: string)`
 - `projectList()` -> returns `ProjectSummary[]`
 - `projectTree(projectPath: string)` -> returns `ProjectTreeResponse`
-- `milestoneCreateInitial(projectPath: string, targetPath: string, message: string)`
+- `milestoneCreateInitial(projectPath: string, message: string)`
 - `milestoneCreate(projectPath: string, message: string)`
 - `milestoneRestore(projectPath: string, milestoneId: string)`
 - `milestoneDelete(projectPath: string, milestoneId: string)`

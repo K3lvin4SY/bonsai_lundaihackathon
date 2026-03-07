@@ -744,22 +744,21 @@ export async function projectTree(
 
 export async function milestoneCreateInitial(
   projectPath: string,
-  targetPath: string,
   message: string,
 ): Promise<{ milestoneId: string }> {
-  console.log(`[vcs] milestone:create-initial  project=${projectPath}  target=${targetPath}  msg="${message}"`);
+  console.log(`[vcs] milestone:create-initial  project=${projectPath}  msg="${message}"`);
 
   const milestoneId = uuidv4();
   const now = new Date().toISOString();
 
-  // 1. Discover binary files
-  const binaryFiles = await listFilesRecursive(targetPath, targetPath);
+  // 1. Discover binary files in the project root
+  const binaryFiles = await listFilesRecursive(projectPath, projectPath);
   console.log(`[vcs] found ${binaryFiles.length} binary file(s)`);
 
   // 2. Copy binaries to .app_data/base/ (use a unique base-file name)
   const trackedFiles: TrackedFile[] = [];
   for (const relPath of binaryFiles) {
-    const srcFile = path.join(targetPath, relPath);
+    const srcFile = path.join(projectPath, relPath);
     const baseFileId = `${uuidv4()}${path.extname(relPath)}`;
     const destFile = path.join(basePath(projectPath), baseFileId);
     await ensureDir(path.dirname(destFile));

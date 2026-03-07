@@ -83,9 +83,9 @@ function registerIpcHandlers(): void {
   // ---- milestone:create-initial ----
   ipcMain.handle(
     'milestone:create-initial',
-    async (_event, projectPath: string, targetPath: string, message: string) => {
-      console.log(`[ipc] milestone:create-initial  path=${projectPath}  target=${targetPath}`);
-      return milestoneCreateInitial(projectPath, targetPath, message);
+    async (_event, projectPath: string, message: string) => {
+      console.log(`[ipc] milestone:create-initial  path=${projectPath}`);
+      return milestoneCreateInitial(projectPath, message);
     },
   );
 
