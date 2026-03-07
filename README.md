@@ -70,6 +70,7 @@ The frontend and backend communicate exclusively through Electron's `contextBrid
 bonsai/
 ├── assets/
 │   └── bin/
+│       ├── xdelta3.exe         # xdelta3 for windows
 │       ├── xdelta3-linux       # Bundled xdelta3 binaries
 │       └── xdelta3-mac
 ├── src/
