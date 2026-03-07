@@ -406,7 +406,7 @@ async function reconstructFile(
     await xdelta3Decode(currentSource, patchFile, targetFile);
 
     // Clean up intermediate staging files
-    if (!isLast && currentSource !== baseFile) {
+    if (currentSource !== baseFile) {
       await fs.unlink(currentSource).catch(() => {});
     }
     currentSource = targetFile;
