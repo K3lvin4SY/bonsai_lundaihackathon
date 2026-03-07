@@ -125,6 +125,11 @@ If you already cloned without it:
 git submodule update --init --recursive
 ```
 
+Go into the repository folder:
+```bash
+cd bonsai_lundaihackathon/
+```
+
 ### 2. Install dependencies
 
 ```bash
