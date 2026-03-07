@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "main": "dist/main/main.js",
   "scripts": {
-    "copy-renderer": "mkdir -p dist/renderer && cp src/renderer/index.html dist/renderer/index.html",
-    "build": "tsc && npm run copy-renderer",
+    "build": "cd src/renderer && npm run build && cd ../.. && tsc",
     "start": "npm run build && electron ."
   },
   "devDependencies": {
