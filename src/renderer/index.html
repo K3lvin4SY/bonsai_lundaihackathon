@@ -87,8 +87,6 @@
       <h2>milestone:create-initial <span class="tag">IPC</span></h2>
       <label>Project Path</label>
       <div class="path-row"><input type="text" id="mci-project" placeholder="/home/user/my-project" /><button class="btn-browse" onclick="browse('mci-project')">📂</button></div>
-      <label>Target Path (folder with binaries)</label>
-      <div class="path-row"><input type="text" id="mci-target" placeholder="/home/user/my-project" /><button class="btn-browse" onclick="browse('mci-target')">📂</button></div>
       <label>Message</label>
       <input type="text" id="mci-message" placeholder="Initial milestone" />
       <button class="btn-primary" onclick="callMilestoneCreateInitial()">Create Initial Milestone</button>
@@ -244,10 +242,9 @@
     function callMilestoneCreateInitial() {
       if (!guard()) return;
       const p = $('mci-project').value.trim();
-      const t = $('mci-target').value.trim();
       const m = $('mci-message').value.trim() || 'Initial milestone';
-      if (!p || !t) { alert('Fill in project path and target path'); return; }
-      safeCall('mci-output', () => api.milestoneCreateInitial(p, t, m));
+      if (!p) { alert('Enter a project path'); return; }
+      safeCall('mci-output', () => api.milestoneCreateInitial(p, m));
     }
 
     function callMilestoneCreate() {

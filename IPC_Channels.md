@@ -301,15 +301,14 @@ Create the first milestone for a project. Copies binary files to the base folder
 ### Renderer call
 
 ```ts
-const result = await window.electronAPI.milestoneCreateInitial(projectPath, targetPath, message);
+const result = await window.electronAPI.milestoneCreateInitial(projectPath, message);
 ```
 
 ### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| `projectPath` | `string` | Absolute path to the project root directory |
-| `targetPath` | `string` | Absolute path to the file or folder to track |
+| `projectPath` | `string` | Absolute path to the project root directory (binary files are scanned from here) |
 | `message` | `string` | Description for the initial milestone |
 
 ### Response
@@ -322,7 +321,7 @@ const result = await window.electronAPI.milestoneCreateInitial(projectPath, targ
 
 ```jsonc
 // Request args
-["/home/user/city-poster", "/home/user/city-poster/city-poster.psd", "Initial canvas setup"]
+["/home/user/city-poster", "Initial canvas setup"]
 
 // Response
 {

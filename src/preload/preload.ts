@@ -31,10 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Create the very first milestone (initialise base files + Git). */
   milestoneCreateInitial: (
     projectPath: string,
-    targetPath: string,
     message: string,
   ) =>
-    ipcRenderer.invoke('milestone:create-initial', projectPath, targetPath, message),
+    ipcRenderer.invoke('milestone:create-initial', projectPath, message),
 
   /** Create a subsequent milestone (diff, patch, commit). */
   milestoneCreate: (projectPath: string, message: string) =>
