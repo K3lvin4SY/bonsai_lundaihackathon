@@ -5,7 +5,7 @@
  * renderer (React frontend) calls via window.electronAPI.
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import * as path from 'path';
 import {
   projectCreate,
@@ -113,6 +113,35 @@ function registerIpcHandlers(): void {
     async (_event, projectPath: string, milestoneId: string) => {
       console.log(`[ipc] milestone:delete  path=${projectPath}  id=${milestoneId}`);
       return milestoneDelete(projectPath, milestoneId);
+    },
+  );
+
+  // ---- dialog:open-directory ----
+  ipcMain.handle(
+    'dialog:open-directory',
+    async (_event, title?: string, defaultPath?: string) => {
+      const win = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showOpenDialog(win!, {
+        title: title || 'Select Directory',
+        defaultPath: defaultPath || undefined,
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      return { canceled: result.canceled, path: result.filePaths[0] ?? null };
+    },
+  );
+
+  // ---- dialog:open-file ----
+  ipcMain.handle(
+    'dialog:open-file',
+    async (_event, title?: string, defaultPath?: string, filters?: Electron.FileFilter[]) => {
+      const win = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showOpenDialog(win!, {
+        title: title || 'Select File',
+        defaultPath: defaultPath || undefined,
+        properties: ['openFile'],
+        filters: filters || undefined,
+      });
+      return { canceled: result.canceled, path: result.filePaths[0] ?? null };
     },
   );
 }
