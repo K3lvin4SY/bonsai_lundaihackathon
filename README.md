@@ -116,7 +116,7 @@ bonsai/
 The renderer is a git submodule. Use `--recurse-submodules` when cloning:
 
 ```bash
-git clone --recurse-submodules git clone --recurse-submodules git@github.com:K3lvin4SY/bonsai_lundaihackathon.git
+git clone --recurse-submodules git@github.com:K3lvin4SY/bonsai_lundaihackathon.git
 ```
 
 If you already cloned without it:
