@@ -789,8 +789,9 @@ export async function milestoneCreateInitial(
     await fs.writeFile(giPath, buildGitignore(), 'utf-8');
   }
 
-  // 5. Git add & commit
-  await git.add(['.gitignore', COMMIT_STATE_FILE]);
+  // 5. Git add & commit (use '.' so ALL non-binary files are staged;
+  //    binary files are already in .gitignore so they will be skipped)
+  await git.add('.');
   const commitResult = await git.commit(message || 'Initial milestone');
 
   await git.branch(['-M', 'main']);
@@ -942,8 +943,9 @@ export async function milestoneCreate(
   };
   await writeJson(commitStatePath(projectPath), commitState);
 
-  // Git add & commit
-  await git.add([COMMIT_STATE_FILE]);
+  // Git add & commit (use '.' so ALL non-binary files are staged;
+  //    binary files are already in .gitignore so they will be skipped)
+  await git.add('.');
   const commitResult = await git.commit(message || `Milestone ${milestoneId}`);
   // simple-git may return "HEAD <hash>" when in detached HEAD — strip the prefix
   const commitHash = (commitResult.commit || '').replace(/^HEAD\s+/i, '');
