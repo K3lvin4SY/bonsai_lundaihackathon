@@ -1,23 +1,128 @@
-import { app, BrowserWindow } from 'electron';
-import * as path from 'path';
+/**
+ * main.ts — Bonsai Electron Main Process
+ *
+ * Sets up the BrowserWindow and registers all IPC handlers that the
+ * renderer (React frontend) calls via window.electronAPI.
+ */
 
-function createWindow() {
+import { app, BrowserWindow, ipcMain } from 'electron';
+import * as path from 'path';
+import {
+  projectCreate,
+  projectDelete,
+  projectList,
+  projectTree,
+  milestoneCreateInitial,
+  milestoneCreate,
+  milestoneRestore,
+  milestoneDelete,
+} from './core/vcs';
+
+// ---------------------------------------------------------------------------
+// Window
+// ---------------------------------------------------------------------------
+
+function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
-      // Important: Keep nodeIntegration false and contextIsolation true for React later
       nodeIntegration: false,
-      contextIsolation: true, 
+      contextIsolation: true,
     },
   });
 
-  // For now, load a basic string. Later, this will load your React index.html
-  mainWindow.loadURL('data:text/html;charset=utf-8,<h2>Electron Backend Initialized</h2>');
+  // Load the test / production renderer page
+  const rendererIndex = path.join(__dirname, '../renderer/index.html');
+  mainWindow.loadFile(rendererIndex).catch(() => {
+    mainWindow.loadURL(
+      'data:text/html;charset=utf-8,<h2>Bonsai — Electron Backend Ready</h2>',
+    );
+  });
 }
 
+// ---------------------------------------------------------------------------
+// IPC Handlers
+// ---------------------------------------------------------------------------
+
+function registerIpcHandlers(): void {
+  // ---- project:create ----
+  ipcMain.handle(
+    'project:create',
+    async (_event, projectPath: string, name: string) => {
+      console.log(`[ipc] project:create  path=${projectPath}  name=${name}`);
+      return projectCreate(projectPath, name);
+    },
+  );
+
+  // ---- project:delete ----
+  ipcMain.handle(
+    'project:delete',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:delete  path=${projectPath}`);
+      return projectDelete(projectPath);
+    },
+  );
+
+  // ---- project:list ----
+  ipcMain.handle('project:list', async () => {
+    console.log('[ipc] project:list');
+    return projectList();
+  });
+
+  // ---- project:tree ----
+  ipcMain.handle(
+    'project:tree',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:tree  path=${projectPath}`);
+      return projectTree(projectPath);
+    },
+  );
+
+  // ---- milestone:create-initial ----
+  ipcMain.handle(
+    'milestone:create-initial',
+    async (_event, projectPath: string, targetPath: string, message: string) => {
+      console.log(`[ipc] milestone:create-initial  path=${projectPath}  target=${targetPath}`);
+      return milestoneCreateInitial(projectPath, targetPath, message);
+    },
+  );
+
+  // ---- milestone:create ----
+  ipcMain.handle(
+    'milestone:create',
+    async (_event, projectPath: string, message: string) => {
+      console.log(`[ipc] milestone:create  path=${projectPath}`);
+      return milestoneCreate(projectPath, message);
+    },
+  );
+
+  // ---- milestone:restore ----
+  ipcMain.handle(
+    'milestone:restore',
+    async (_event, projectPath: string, milestoneId: string) => {
+      console.log(`[ipc] milestone:restore  path=${projectPath}  id=${milestoneId}`);
+      return milestoneRestore(projectPath, milestoneId);
+    },
+  );
+
+  // ---- milestone:delete ----
+  ipcMain.handle(
+    'milestone:delete',
+    async (_event, projectPath: string, milestoneId: string) => {
+      console.log(`[ipc] milestone:delete  path=${projectPath}  id=${milestoneId}`);
+      return milestoneDelete(projectPath, milestoneId);
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// App lifecycle
+// ---------------------------------------------------------------------------
+
 app.whenReady().then(() => {
+  registerIpcHandlers();
   createWindow();
 
   app.on('activate', () => {

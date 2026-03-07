@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "main": "dist/main/main.js",
   "scripts": {
-    "build": "tsc",
-    "start": "tsc && electron ."
+    "copy-renderer": "mkdir -p dist/renderer && cp src/renderer/index.html dist/renderer/index.html",
+    "build": "tsc && npm run copy-renderer",
+    "start": "npm run build && electron ."
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "electron": "^29.0.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "simple-git": "^3.32.3"
   }
 }
