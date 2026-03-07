@@ -109,36 +109,36 @@ bonsai/
 
 ---
 
-## How to Run
+## Getting Started
 
-### 1. Install dependencies
+### 1. Clone (with submodules)
+
+The renderer is a git submodule. Use `--recurse-submodules` when cloning:
+
+```bash
+git clone --recurse-submodules git clone --recurse-submodules git@github.com:K3lvin4SY/bonsai_lundaihackathon.git
+```
+
+If you already cloned without it:
+
+```bash
+git submodule update --init --recursive
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
+cd src/renderer && npm install && cd ../..
 ```
 
-### 2. Build & launch
+### 3. Build & launch
 
 ```bash
 npm start
 ```
 
-This will:
-1. Compile all TypeScript sources (`src/`) into `dist/`
-2. Copy the renderer `index.html` to `dist/renderer/`
-3. Launch the Electron application
-
-### 3. Development (watch mode)
-
-To rebuild automatically on file changes, run the TypeScript compiler in watch mode in one terminal and Electron in another:
-
-```bash
-# Terminal 1 — watch TypeScript
-npx tsc --watch
-
-# Terminal 2 — start Electron (re-run after each build)
-electron .
-```
+This compiles all TypeScript sources into `dist/`, copies the renderer output, and launches Electron.
 
 ---
 
