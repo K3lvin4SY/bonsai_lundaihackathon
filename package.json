@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "main": "dist/main/main.js",
   "scripts": {
-    "build:main": "tsc",
-    "build:renderer": "cd src/renderer && npm run build",
-    "build": "npm run build:renderer && npm run build:main",
+    "build": "cd src/renderer && npm run build && cd ../.. && tsc",
     "start": "npm run build && electron ."
   },
   "devDependencies": {
