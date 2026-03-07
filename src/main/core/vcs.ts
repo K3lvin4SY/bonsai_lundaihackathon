@@ -548,9 +548,15 @@ function buildGitignore(): string {
 export async function projectCreate(
   projectPath: string,
   name: string,
-): Promise<{ id: string; status: 'success' | 'error' }> {
+): Promise<{ id: string; status: 'success' | 'error'; error?: string }> {
   console.log(`[vcs] project:create  path=${projectPath}  name=${name}`);
   try {
+    // Check for duplicate path
+    const existing = await loadProjectsList();
+    if (existing.some((p) => p.projectPath === projectPath)) {
+      return { id: '', status: 'error', error: 'duplicate_path' };
+    }
+
     const projectId = uuidv4();
 
     // Scaffold directories
