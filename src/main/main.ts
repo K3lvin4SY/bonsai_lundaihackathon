@@ -34,7 +34,7 @@ function createWindow(): void {
   });
 
   // Load the test / production renderer page
-  const rendererIndex = path.join(__dirname, '../renderer/index.html');
+  const rendererIndex = path.join(__dirname, '../../src/renderer/dist/index.html');
   mainWindow.loadFile(rendererIndex).catch(() => {
     mainWindow.loadURL(
       'data:text/html;charset=utf-8,<h2>Bonsai — Electron Backend Ready</h2>',
