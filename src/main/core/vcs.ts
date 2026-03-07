@@ -792,6 +792,8 @@ export async function milestoneCreateInitial(
   // 5. Git add & commit
   await git.add(['.gitignore', COMMIT_STATE_FILE]);
   const commitResult = await git.commit(message || 'Initial milestone');
+
+  await git.branch(['-M', 'main']);
   // simple-git may return "HEAD <hash>" when in detached HEAD — strip the prefix
   const commitHash = (commitResult.commit || '').replace(/^HEAD\s+/i, '');
 
