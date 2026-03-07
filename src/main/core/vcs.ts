@@ -792,7 +792,8 @@ export async function milestoneCreateInitial(
   // 5. Git add & commit
   await git.add(['.gitignore', COMMIT_STATE_FILE]);
   const commitResult = await git.commit(message || 'Initial milestone');
-  const commitHash = commitResult.commit || '';
+  // simple-git may return "HEAD <hash>" when in detached HEAD — strip the prefix
+  const commitHash = (commitResult.commit || '').replace(/^HEAD\s+/i, '');
 
   // 6. Update global_registry.json
   const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
@@ -842,6 +843,9 @@ export async function milestoneCreate(
     if (!registry.branches.includes(branchName)) {
       registry.branches.push(branchName);
     }
+  } else {
+    // Ensure we're on the correct branch (not detached HEAD from a restore)
+    await git.checkout(branchName);
   }
 
   // Read parent commit_state so we know which files are tracked & their patches
@@ -939,7 +943,8 @@ export async function milestoneCreate(
   // Git add & commit
   await git.add([COMMIT_STATE_FILE]);
   const commitResult = await git.commit(message || `Milestone ${milestoneId}`);
-  const commitHash = commitResult.commit || '';
+  // simple-git may return "HEAD <hash>" when in detached HEAD — strip the prefix
+  const commitHash = (commitResult.commit || '').replace(/^HEAD\s+/i, '');
 
   // Update global_registry
   registry.milestones[milestoneId] = {
