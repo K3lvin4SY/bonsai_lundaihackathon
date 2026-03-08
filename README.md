@@ -49,9 +49,12 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | Action | What happens |
 |---|---|
 | **Save a Milestone** | Bonsai snapshots your file state. New files get a base copy; existing files get an `xdelta3` patch storing only what changed |
-| **Restore a Milestone** | Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs files by replaying patches |
-| **Branch a Timeline** | Creates a new Git branch and keeps both histories alive on the canvas — explore without losing your current path |
-| **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — your entire creative history at a glance |
+| **Restore a Milestone** | Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs files by replaying patches. Warns if there are unsaved changes before proceeding |
+| **Branch a Timeline** | Creates a new Git branch and keeps both histories alive on the canvas — restore any past milestone and save forward to start a parallel history |
+| **Tag a Milestone** | Attach semantic labels (release, experiment, wip, backup, archived) to milestones for quick visual filtering |
+| **Export a Milestone** | Save any milestone's full file state as a `.zip` archive via native dialog |
+| **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering |
+| **Auto-watch** | Bonsai monitors the project folder and auto-creates milestones when files change. The debounce interval (5 s – 1 min) is configurable per project |
 
 ### Design Philosophy
 
@@ -73,6 +76,7 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **Node.js `child_process`** | Spawning the bundled `xdelta3` binary |
 | **simple-git** | Programmatic Git operations (init, commit, checkout, branch) |
 | **xdelta3** | Binary delta encoding / decoding (bundled for Linux, macOS & Windows) |
+| **archiver** | ZIP archive creation for milestone export |
 
 ### Frontend — Renderer Process
 
@@ -201,5 +205,13 @@ The full IPC channel specification — parameters, response shapes, and usage ex
 | `onAutoWatchMilestoneCreated(cb)` | Listen for auto-save milestone events (Main → Renderer) |
 | `blacklistGet(path)` | Get the ignored files/folders list for a project |
 | `blacklistSet(path, items)` | Update the ignored files/folders list for a project |
+| `projectRename(path, name)` | Rename a project |
+| `projectHasChanges(path)` | Check whether the project has unsaved changes since the active milestone |
+| `projectStorageStats(path)` | Get total base, patch, and milestone count for a project |
+| `milestoneRename(path, id, name)` | Rename an existing milestone |
+| `milestoneSetTags(path, id, tags)` | Set the tag list for a milestone |
+| `milestoneStorageSize(path, id)` | Get the on-disk size of a milestone's stored patches |
+| `milestoneTrackedFiles(path, id)` | List the files tracked by a milestone |
+| `milestoneExportZip(path, id)` | Export a milestone's file state as a `.zip` archive |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |

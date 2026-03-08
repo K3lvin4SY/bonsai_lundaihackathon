@@ -18,10 +18,20 @@ import {
   registryPath,
   readJson,
   writeJson,
+  settingsGet,
   type GlobalRegistry,
 } from './vcs';
 
-const DEBOUNCE_MS = 10_000; // 10 seconds
+const DEFAULT_DEBOUNCE_MS = 10_000; // 10 seconds
+
+/** Resolve the configured debounce interval (ms). */
+async function getDebounceMs(): Promise<number> {
+  try {
+    const val = await settingsGet('autoWatchDebounceMs');
+    if (typeof val === 'number' && val >= 1000) return val;
+  } catch { /* use default */ }
+  return DEFAULT_DEBOUNCE_MS;
+}
 
 /** Directories / files that should never trigger an auto-watch milestone. */
 const IGNORED_NAMES = new Set([
@@ -145,10 +155,12 @@ export async function autoWatchStart(
         clearTimeout(entry.debounceTimer);
       }
 
-      entry.debounceTimer = setTimeout(() => {
-        entry.debounceTimer = null;
-        triggerMilestone(projectPath, entry);
-      }, DEBOUNCE_MS);
+      getDebounceMs().then((debounceMs) => {
+        entry.debounceTimer = setTimeout(() => {
+          entry.debounceTimer = null;
+          triggerMilestone(projectPath, entry);
+        }, debounceMs);
+      });
     };
 
     entry.watcher = fs.watch(projectPath, { recursive: true }, onChange);
@@ -304,10 +316,12 @@ async function triggerMilestone(
     // If changes came in while we were busy, restart the debounce
     if (entry.pendingRetrigger && watchers.has(projectPath)) {
       entry.pendingRetrigger = false;
-      entry.debounceTimer = setTimeout(() => {
-        entry.debounceTimer = null;
-        triggerMilestone(projectPath, entry);
-      }, DEBOUNCE_MS);
+      getDebounceMs().then((debounceMs) => {
+        entry.debounceTimer = setTimeout(() => {
+          entry.debounceTimer = null;
+          triggerMilestone(projectPath, entry);
+        }, debounceMs);
+      });
     }
   }
 }

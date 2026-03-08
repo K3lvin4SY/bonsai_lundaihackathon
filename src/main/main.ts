@@ -18,6 +18,16 @@ import {
   milestoneDelete,
   blacklistGet,
   blacklistSet,
+  milestoneStorageSize,
+  milestoneTrackedFiles,
+  projectHasChanges,
+  milestoneRename,
+  milestoneSetTags,
+  milestoneExportZip,
+  projectStorageStats,
+  projectRename,
+  settingsGet,
+  settingsSet,
 } from './core/vcs';
 import {
   autoWatchStart,
@@ -212,6 +222,102 @@ function registerIpcHandlers(): void {
     async (_event, projectPath: string, items: string[]) => {
       console.log(`[ipc] blacklist:set  path=${projectPath}`);
       return blacklistSet(projectPath, items);
+    },
+  );
+
+  // ---- milestone:storage-size ----
+  ipcMain.handle(
+    'milestone:storage-size',
+    async (_event, projectPath: string, milestoneId: string) => {
+      console.log(`[ipc] milestone:storage-size  path=${projectPath}  id=${milestoneId}`);
+      return milestoneStorageSize(projectPath, milestoneId);
+    },
+  );
+
+  // ---- milestone:tracked-files ----
+  ipcMain.handle(
+    'milestone:tracked-files',
+    async (_event, projectPath: string, milestoneId: string) => {
+      console.log(`[ipc] milestone:tracked-files  path=${projectPath}  id=${milestoneId}`);
+      return milestoneTrackedFiles(projectPath, milestoneId);
+    },
+  );
+
+  // ---- project:has-changes ----
+  ipcMain.handle(
+    'project:has-changes',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:has-changes  path=${projectPath}`);
+      return projectHasChanges(projectPath);
+    },
+  );
+
+  // ---- milestone:rename ----
+  ipcMain.handle(
+    'milestone:rename',
+    async (_event, projectPath: string, milestoneId: string, newMessage: string) => {
+      console.log(`[ipc] milestone:rename  path=${projectPath}  id=${milestoneId}`);
+      return milestoneRename(projectPath, milestoneId, newMessage);
+    },
+  );
+
+  // ---- milestone:set-tags ----
+  ipcMain.handle(
+    'milestone:set-tags',
+    async (_event, projectPath: string, milestoneId: string, tags: string[]) => {
+      console.log(`[ipc] milestone:set-tags  path=${projectPath}  id=${milestoneId}`);
+      return milestoneSetTags(projectPath, milestoneId, tags);
+    },
+  );
+
+  // ---- milestone:export-zip ----
+  ipcMain.handle(
+    'milestone:export-zip',
+    async (_event, projectPath: string, milestoneId: string) => {
+      const win = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showSaveDialog(win!, {
+        title: 'Export Milestone as ZIP',
+        defaultPath: `milestone-${milestoneId.slice(0, 8)}.zip`,
+        filters: [{ name: 'ZIP Archive', extensions: ['zip'] }],
+      });
+      if (result.canceled || !result.filePath) {
+        return { status: 'canceled' as const };
+      }
+      return milestoneExportZip(projectPath, milestoneId, result.filePath);
+    },
+  );
+
+  // ---- project:storage-stats ----
+  ipcMain.handle(
+    'project:storage-stats',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:storage-stats  path=${projectPath}`);
+      return projectStorageStats(projectPath);
+    },
+  );
+
+  // ---- project:rename ----
+  ipcMain.handle(
+    'project:rename',
+    async (_event, projectPath: string, newName: string) => {
+      console.log(`[ipc] project:rename  path=${projectPath}  newName=${newName}`);
+      return projectRename(projectPath, newName);
+    },
+  );
+
+  // ---- settings:get ----
+  ipcMain.handle(
+    'settings:get',
+    async (_event, key: string) => {
+      return settingsGet(key);
+    },
+  );
+
+  // ---- settings:set ----
+  ipcMain.handle(
+    'settings:set',
+    async (_event, key: string, value: unknown) => {
+      return settingsSet(key, value);
     },
   );
 }

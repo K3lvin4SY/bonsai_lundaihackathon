@@ -15,10 +15,18 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`project:delete`](#projectdelete) | `projectDelete()` | Renderer → Main |
 | [`project:list`](#projectlist) | `projectList()` | Renderer → Main |
 | [`project:tree`](#projecttree) | `projectTree()` | Renderer → Main |
+| [`project:rename`](#projectrename) | `projectRename()` | Renderer → Main |
+| [`project:has-changes`](#projecthas-changes) | `projectHasChanges()` | Renderer → Main |
+| [`project:storage-stats`](#projectstorage-stats) | `projectStorageStats()` | Renderer → Main |
 | [`milestone:create-initial`](#milestonecreateinitial) | `milestoneCreateInitial()` | Renderer → Main |
 | [`milestone:create`](#milestonecreate) | `milestoneCreate()` | Renderer → Main |
 | [`milestone:restore`](#milestonerestore) | `milestoneRestore()` | Renderer → Main |
 | [`milestone:delete`](#milestonedelete) | `milestoneDelete()` | Renderer → Main |
+| [`milestone:rename`](#milestonerename) | `milestoneRename()` | Renderer → Main |
+| [`milestone:set-tags`](#milestoneset-tags) | `milestoneSetTags()` | Renderer → Main |
+| [`milestone:storage-size`](#milestonestorage-size) | `milestoneStorageSize()` | Renderer → Main |
+| [`milestone:tracked-files`](#milestonetracked-files) | `milestoneTrackedFiles()` | Renderer → Main |
+| [`milestone:export-zip`](#milestoneexport-zip) | `milestoneExportZip()` | Renderer → Main |
 | [`autowatch:start`](#autowatchstart) | `autoWatchStart()` | Renderer → Main |
 | [`autowatch:stop`](#autowatchstop) | `autoWatchStop()` | Renderer → Main |
 | [`autowatch:status`](#autowatchstatus) | `autoWatchStatus()` | Renderer → Main |
@@ -125,9 +133,10 @@ Array<{
   id: string;
   name: string;
   projectPath: string;
-  createdAt: string;            // ISO 8601 timestamp
-  lastMilestoneAt: string | null;  // ISO 8601 or null if no milestones
+  createdAt: string;                   // ISO 8601 timestamp
+  lastMilestoneAt: string | null;      // ISO 8601 or null if no milestones
   milestoneCount: number;
+  lastMilestoneMessage: string | null; // Message of the most recent milestone
 }>
 ```
 
@@ -142,7 +151,8 @@ Array<{
     "projectPath": "/home/user/city-poster",
     "createdAt": "2026-03-01T10:00:00.000Z",
     "lastMilestoneAt": "2026-03-05T14:30:00.000Z",
-    "milestoneCount": 5
+    "milestoneCount": 5,
+    "lastMilestoneMessage": "Refined color grading"
   },
   {
     "id": "f9e8d7c6-b5a4-3210-fedc-ba0987654321",
@@ -196,6 +206,7 @@ const data = await window.electronAPI.projectTree(projectPath);
   branch: string;
   createdAt: string;        // ISO 8601
   children: TreeNode[];     // Nested child milestones
+  tags?: string[];          // Optional semantic tags (e.g. "release", "wip")
 }
 ```
 
@@ -210,6 +221,7 @@ const data = await window.electronAPI.projectTree(projectPath);
   parentMilestoneId: string | null;
   patchFiles: string[];     // Relative paths inside .app_data/patches/
   createdAt: string;        // ISO 8601
+  tags?: string[];          // Optional semantic tags
 }
 ```
 
@@ -453,6 +465,314 @@ const result = await window.electronAPI.milestoneDelete(projectPath, milestoneId
 
 ---
 
+## `project:rename`
+
+Rename an existing project. Updates the entry in the global registry without touching the project's files or Git history.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectRename(projectPath, newName);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `newName` | `string` | New human-readable project name |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "City Poster 2026"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `project:has-changes`
+
+Check whether the project's working directory has unsaved changes relative to the currently active milestone. Used to warn the user before a restore or branch operation would discard work.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectHasChanges(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ hasChanges: boolean }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "hasChanges": true
+}
+```
+
+---
+
+## `project:storage-stats`
+
+Return aggregate storage statistics for a project: total size of base snapshots, total size of patch files, and number of milestones.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectStorageStats(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{
+  totalBase: number;       // Bytes used by .app_data/base/
+  totalPatches: number;    // Bytes used by .app_data/patches/
+  milestoneCount: number;  // Total number of milestones
+}
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "totalBase": 52428800,
+  "totalPatches": 8388608,
+  "milestoneCount": 12
+}
+```
+
+---
+
+## `milestone:rename`
+
+Rename an existing milestone. Updates the message stored in the project registry.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneRename(projectPath, milestoneId, newMessage);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the target milestone |
+| `newMessage` | `string` | The new milestone name / description |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "bbb-222", "First background pass (revised)"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `milestone:set-tags`
+
+Replace the tags for a milestone. Tags are an array of short semantic labels. Available tags: `release`, `experiment`, `wip`, `backup`, `archived`.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneSetTags(projectPath, milestoneId, tags);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the target milestone |
+| `tags` | `string[]` | Replacement tag list (pass `[]` to clear all tags) |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "ccc-333", ["release", "backup"]]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `milestone:storage-size`
+
+Get the total on-disk size (in bytes) of the patch files stored for a specific milestone.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneStorageSize(projectPath, milestoneId);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the target milestone |
+
+### Response
+
+```ts
+{ bytes: number }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "bbb-222"]
+
+// Response
+{
+  "bytes": 2097152
+}
+```
+
+---
+
+## `milestone:tracked-files`
+
+List the relative file paths that are tracked (stored) by a specific milestone. For the initial milestone these are the base copies; for subsequent milestones these are the files for which a patch was computed.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneTrackedFiles(projectPath, milestoneId);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the target milestone |
+
+### Response
+
+```ts
+{ files: string[] }   // Relative paths from the project root
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "bbb-222"]
+
+// Response
+{
+  "files": ["city-poster.psd", "reference/skyline.png"]
+}
+```
+
+---
+
+## `milestone:export-zip`
+
+Export the full reconstructed file state of a milestone as a `.zip` archive. Opens a native Save As dialog for the user to choose the destination. Returns `null` if the user cancels the dialog.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneExportZip(projectPath, milestoneId);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the milestone to export |
+
+### Response
+
+```ts
+{ status: 'success' | 'cancelled' | 'error'; outputPath?: string }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "ccc-333"]
+
+// Response (user chose a path)
+{
+  "status": "success",
+  "outputPath": "/home/user/Downloads/city-poster-ccc-333.zip"
+}
+
+// Response (user cancelled)
+{
+  "status": "cancelled"
+}
+```
+
+---
+
 ## Common Types Reference
 
 ### `ProjectSummary`
@@ -461,12 +781,13 @@ Returned by `project:list`. One entry per registered project.
 
 ```ts
 interface ProjectSummary {
-  id: string;                    // UUID
-  name: string;                  // Human-readable name
-  projectPath: string;           // Absolute filesystem path
-  createdAt: string;             // ISO 8601 timestamp
-  lastMilestoneAt: string | null;  // ISO 8601 or null
-  milestoneCount: number;        // Total milestones in the project
+  id: string;                          // UUID
+  name: string;                        // Human-readable name
+  projectPath: string;                 // Absolute filesystem path
+  createdAt: string;                   // ISO 8601 timestamp
+  lastMilestoneAt: string | null;      // ISO 8601 or null
+  milestoneCount: number;              // Total milestones in the project
+  lastMilestoneMessage: string | null; // Message of the most recent milestone
 }
 ```
 
@@ -482,6 +803,7 @@ interface TreeNode {
   branch: string;
   createdAt: string;
   children: TreeNode[];
+  tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
 }
 ```
 
@@ -498,6 +820,7 @@ interface MilestoneRecord {
   parentMilestoneId: string | null;
   patchFiles: string[];
   createdAt: string;
+  tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
 }
 ```
 
@@ -574,13 +897,14 @@ const result = await window.electronAPI.settingsSet(key, value);
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `launchToTray` | `boolean` | `false` | When true, Bonsai starts minimized to the system tray instead of showing the main window |
+| `branchColorsEnabled` | `boolean` | `false` | Color-code branches on the timeline canvas using the 8-color palette |
+| `autoWatchDebounceMs` | `number` | `10000` | Milliseconds to wait after the last file change before auto-creating a milestone (min 1000) |
 
 ---
 
 ## `autowatch:start`
 
-Start watching a project folder for file changes. When a change is detected, Bonsai waits 10 seconds after the last change before automatically creating a milestone. This debounce prevents corruption from rapid saves (e.g. an application writing multiple files at once). Changes to internal bookkeeping directories (`.git`, `.app_data`, `.tmp`, `node_modules`) are ignored.
+Start watching a project folder for file changes. When a change is detected, Bonsai waits for the configured debounce interval (default 10 s, adjustable per project via `settings:set` → `autoWatchDebounceMs`) before automatically creating a milestone. This prevents corruption from rapid saves (e.g. an application writing multiple files at once). Changes to internal bookkeeping directories (`.git`, `.app_data`, `.tmp`, `node_modules`) are ignored.
 
 The watcher is **off by default** and must be explicitly enabled per project.
 

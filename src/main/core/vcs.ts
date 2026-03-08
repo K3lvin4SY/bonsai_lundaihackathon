@@ -16,6 +16,8 @@ import * as fsSync from 'fs';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import simpleGit, { SimpleGit } from 'simple-git';
+import archiver from 'archiver';
+import { createWriteStream } from 'fs';
 import { autoWatchRefreshBlacklist } from './autowatch';
 
 const uuidv4 = randomUUID;
@@ -105,6 +107,16 @@ const BINARY_EXTENSIONS = new Set([
 // Type Definitions
 // ---------------------------------------------------------------------------
 
+/** Path to the global app settings file. */
+const SETTINGS_FILE = path.join(
+  process.env.APPDATA ||
+    (process.platform === 'darwin'
+      ? path.join(process.env.HOME || '~', 'Library', 'Application Support')
+      : path.join(process.env.HOME || '~', '.config')),
+  'bonsai',
+  'settings.json',
+);
+
 export interface GlobalRegistry {
   projectId: string;
   projectName: string;
@@ -125,6 +137,7 @@ export interface MilestoneNode {
   parentMilestoneId: string | null;
   createdAt: string;
   children: string[];
+  tags?: string[];
 }
 
 export interface CommitState {
@@ -146,6 +159,7 @@ export interface ProjectSummary {
   createdAt: string;
   lastMilestoneAt: string | null;
   milestoneCount: number;
+  lastMilestoneMessage: string | null;
 }
 
 export interface TreeNode {
@@ -155,11 +169,13 @@ export interface TreeNode {
   branch: string;
   createdAt: string;
   children: TreeNode[];
+  tags?: string[];
 }
 
 export interface MilestoneRecord {
   milestoneId: string;
   message: string;
+  tags?: string[];
   commitHash: string;
   branch: string;
   parentMilestoneId: string | null;
@@ -710,11 +726,16 @@ export async function projectList(): Promise<ProjectSummary[]> {
       const milestoneCount = milestoneIds.length;
 
       let lastMilestoneAt: string | null = null;
+      let lastMilestoneMessage: string | null = null;
       if (milestoneCount > 0) {
-        const dates = milestoneIds.map(
-          (id) => new Date(registry.milestones[id].createdAt).getTime(),
-        );
-        lastMilestoneAt = new Date(Math.max(...dates)).toISOString();
+        let latestTime = 0;
+        let latestId: string | null = null;
+        for (const id of milestoneIds) {
+          const t = new Date(registry.milestones[id].createdAt).getTime();
+          if (t > latestTime) { latestTime = t; latestId = id; }
+        }
+        lastMilestoneAt = new Date(latestTime).toISOString();
+        if (latestId) lastMilestoneMessage = registry.milestones[latestId].message;
       }
 
       summaries.push({
@@ -724,6 +745,7 @@ export async function projectList(): Promise<ProjectSummary[]> {
         createdAt: registry.createdAt,
         lastMilestoneAt,
         milestoneCount,
+        lastMilestoneMessage,
       });
     } catch {
       // Project folder may have been manually deleted — skip it
@@ -761,6 +783,7 @@ export async function projectTree(
       return {
         milestoneId: node.milestoneId,
         message: node.message,
+        tags: node.tags,
         commitHash: node.commitHash,
         branch: node.branch,
         parentMilestoneId: node.parentMilestoneId,
@@ -779,6 +802,7 @@ export async function projectTree(
       commitHash: node.commitHash,
       branch: node.branch,
       createdAt: node.createdAt,
+      tags: node.tags,
       children: node.children.map(buildTree),
     };
   }
@@ -1204,6 +1228,347 @@ export async function blacklistSet(
     return { status: 'success' };
   } catch (err: any) {
     console.error('[vcs] blacklist:set  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// milestone:storage-size
+// ------------------------------------------------------------------
+
+export async function milestoneStorageSize(
+  projectPath: string,
+  milestoneId: string,
+): Promise<{ totalBytes: number }> {
+  const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+  const node = registry.milestones[milestoneId];
+  if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+  // Read the commit_state for this milestone from git
+  const git = getGit(projectPath);
+  let commitStateContent: string;
+  try {
+    commitStateContent = await git.show(`${node.commitHash}:${COMMIT_STATE_FILE}`);
+  } catch {
+    commitStateContent = await fs.readFile(commitStatePath(projectPath), 'utf-8');
+  }
+  const commitState: CommitState = JSON.parse(commitStateContent);
+
+  let totalBytes = 0;
+  for (const trackedFile of commitState.files) {
+    // Count base file
+    try {
+      const baseStat = await fs.stat(path.join(basePath(projectPath), trackedFile.baseFileId));
+      totalBytes += baseStat.size;
+    } catch { /* skip */ }
+
+    // Count patch files
+    for (const patchName of trackedFile.patches) {
+      try {
+        const patchStat = await fs.stat(path.join(patchesPath(projectPath), patchName));
+        totalBytes += patchStat.size;
+      } catch { /* skip */ }
+    }
+  }
+
+  return { totalBytes };
+}
+
+// ------------------------------------------------------------------
+// milestone:tracked-files
+// ------------------------------------------------------------------
+
+export async function milestoneTrackedFiles(
+  projectPath: string,
+  milestoneId: string,
+): Promise<string[]> {
+  const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+  const node = registry.milestones[milestoneId];
+  if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+  const git = getGit(projectPath);
+  let commitStateContent: string;
+  try {
+    commitStateContent = await git.show(`${node.commitHash}:${COMMIT_STATE_FILE}`);
+  } catch {
+    commitStateContent = await fs.readFile(commitStatePath(projectPath), 'utf-8');
+  }
+  const commitState: CommitState = JSON.parse(commitStateContent);
+  return commitState.files.map((f) => f.relativePath);
+}
+
+// ------------------------------------------------------------------
+// project:has-changes
+// ------------------------------------------------------------------
+
+export async function projectHasChanges(
+  projectPath: string,
+): Promise<{ hasChanges: boolean }> {
+  const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+  if (!registry.activeMilestoneId) return { hasChanges: false };
+  const blacklist = registry.blacklist || [];
+
+  // Read the commit_state.json on disk (should match the active milestone)
+  let commitState: CommitState;
+  try {
+    commitState = await readJson<CommitState>(commitStatePath(projectPath));
+  } catch {
+    return { hasChanges: true }; // can't read = assume changes
+  }
+
+  // Get current files on disk
+  const currentFiles = await listFilesRecursive(projectPath, projectPath, blacklist);
+  const trackedPaths = new Set(commitState.files.map((f) => f.relativePath));
+
+  // New or removed files?
+  const currentSet = new Set(currentFiles);
+  for (const rel of currentFiles) {
+    if (!trackedPaths.has(rel)) return { hasChanges: true };
+  }
+  for (const rel of trackedPaths) {
+    if (!currentSet.has(rel)) return { hasChanges: true };
+  }
+
+  // Check file sizes for changes (fast heuristic)
+  for (const trackedFile of commitState.files) {
+    const currentFilePath = path.join(projectPath, trackedFile.relativePath);
+    try {
+      const currentStat = await fs.stat(currentFilePath);
+      const reconstructed = await reconstructFile(projectPath, trackedFile, tmpPath(projectPath));
+      const reconstructedStat = await fs.stat(reconstructed);
+      if (currentStat.size !== reconstructedStat.size) {
+        await fs.unlink(reconstructed).catch(() => {});
+        await fs.rm(tmpPath(projectPath), { recursive: true, force: true });
+        return { hasChanges: true };
+      }
+      // Compare content
+      const [currentBuf, reconBuf] = await Promise.all([
+        fs.readFile(currentFilePath),
+        fs.readFile(reconstructed),
+      ]);
+      await fs.unlink(reconstructed).catch(() => {});
+      if (!currentBuf.equals(reconBuf)) {
+        await fs.rm(tmpPath(projectPath), { recursive: true, force: true });
+        return { hasChanges: true };
+      }
+    } catch {
+      // If reconstruction fails, assume changed
+      await fs.rm(tmpPath(projectPath), { recursive: true, force: true });
+      return { hasChanges: true };
+    }
+  }
+
+  // Clean up tmp
+  await fs.rm(tmpPath(projectPath), { recursive: true, force: true });
+  return { hasChanges: false };
+}
+
+// ------------------------------------------------------------------
+// milestone:rename
+// ------------------------------------------------------------------
+
+export async function milestoneRename(
+  projectPath: string,
+  milestoneId: string,
+  newMessage: string,
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] milestone:rename  project=${projectPath}  milestone=${milestoneId}  msg="${newMessage}"`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    const node = registry.milestones[milestoneId];
+    if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+    node.message = newMessage;
+    await writeJson(registryPath(projectPath), registry);
+
+    console.log('[vcs] milestone:rename  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] milestone:rename  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// milestone:set-tags
+// ------------------------------------------------------------------
+
+export async function milestoneSetTags(
+  projectPath: string,
+  milestoneId: string,
+  tags: string[],
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] milestone:set-tags  project=${projectPath}  milestone=${milestoneId}  tags=${JSON.stringify(tags)}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    const node = registry.milestones[milestoneId];
+    if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+    node.tags = tags;
+    await writeJson(registryPath(projectPath), registry);
+
+    console.log('[vcs] milestone:set-tags  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] milestone:set-tags  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// milestone:export-zip
+// ------------------------------------------------------------------
+
+export async function milestoneExportZip(
+  projectPath: string,
+  milestoneId: string,
+  outputZipPath: string,
+): Promise<{ status: 'success' | 'error'; path?: string }> {
+  console.log(`[vcs] milestone:export-zip  project=${projectPath}  milestone=${milestoneId}  output=${outputZipPath}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    const node = registry.milestones[milestoneId];
+    if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+    // Read commit state from git
+    const git = getGit(projectPath);
+    let commitStateContent: string;
+    try {
+      commitStateContent = await git.show(`${node.commitHash}:${COMMIT_STATE_FILE}`);
+    } catch {
+      commitStateContent = await fs.readFile(commitStatePath(projectPath), 'utf-8');
+    }
+    const commitState: CommitState = JSON.parse(commitStateContent);
+
+    // Reconstruct all files into a temp directory
+    const exportTmp = path.join(tmpPath(projectPath), `export_${milestoneId}`);
+    await ensureDir(exportTmp);
+
+    for (const trackedFile of commitState.files) {
+      await reconstructFile(projectPath, trackedFile, exportTmp);
+    }
+
+    // Create ZIP
+    await new Promise<void>((resolve, reject) => {
+      const output = createWriteStream(outputZipPath);
+      const archive = archiver('zip', { zlib: { level: 6 } });
+
+      output.on('close', resolve);
+      archive.on('error', reject);
+
+      archive.pipe(output);
+      archive.directory(exportTmp, false);
+      archive.finalize();
+    });
+
+    // Clean up temp
+    await fs.rm(exportTmp, { recursive: true, force: true });
+
+    console.log('[vcs] milestone:export-zip  SUCCESS');
+    return { status: 'success', path: outputZipPath };
+  } catch (err: any) {
+    console.error('[vcs] milestone:export-zip  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// project:storage-stats
+// ------------------------------------------------------------------
+
+export async function projectStorageStats(
+  projectPath: string,
+): Promise<{ totalBase: number; totalPatches: number; milestoneCount: number }> {
+  let totalBase = 0;
+  let totalPatches = 0;
+
+  // Sum all files in base/
+  try {
+    const baseDir = basePath(projectPath);
+    const baseFiles = await fs.readdir(baseDir);
+    for (const f of baseFiles) {
+      const stat = await fs.stat(path.join(baseDir, f));
+      totalBase += stat.size;
+    }
+  } catch { /* empty */ }
+
+  // Sum all files in patches/
+  try {
+    const patchDir = patchesPath(projectPath);
+    const patchFiles = await fs.readdir(patchDir);
+    for (const f of patchFiles) {
+      const stat = await fs.stat(path.join(patchDir, f));
+      totalPatches += stat.size;
+    }
+  } catch { /* empty */ }
+
+  let milestoneCount = 0;
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    milestoneCount = Object.keys(registry.milestones).length;
+  } catch { /* empty */ }
+
+  return { totalBase, totalPatches, milestoneCount };
+}
+
+// ------------------------------------------------------------------
+// project:rename
+// ------------------------------------------------------------------
+
+export async function projectRename(
+  projectPath: string,
+  newName: string,
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] project:rename  path=${projectPath}  newName=${newName}`);
+  try {
+    // Update registry
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    registry.projectName = newName;
+    await writeJson(registryPath(projectPath), registry);
+
+    // Update global projects list
+    const list = await loadProjectsList();
+    const entry = list.find((e) => e.projectPath === projectPath);
+    if (entry) {
+      entry.name = newName;
+      await saveProjectsList(list);
+    }
+
+    console.log('[vcs] project:rename  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] project:rename  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// settings:get / settings:set
+// ------------------------------------------------------------------
+
+export async function settingsGet(key: string): Promise<unknown> {
+  try {
+    const all = await readJson<Record<string, unknown>>(SETTINGS_FILE);
+    return all[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function settingsSet(
+  key: string,
+  value: unknown,
+): Promise<{ status: 'success' | 'error' }> {
+  try {
+    let all: Record<string, unknown> = {};
+    try {
+      all = await readJson<Record<string, unknown>>(SETTINGS_FILE);
+    } catch { /* file doesn't exist yet */ }
+    all[key] = value;
+    await writeJson(SETTINGS_FILE, all);
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] settings:set  ERROR', err);
     return { status: 'error' };
   }
 }

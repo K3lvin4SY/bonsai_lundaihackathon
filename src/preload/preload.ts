@@ -47,6 +47,38 @@ contextBridge.exposeInMainWorld('electronAPI', {
   milestoneDelete: (projectPath: string, milestoneId: string) =>
     ipcRenderer.invoke('milestone:delete', projectPath, milestoneId),
 
+  /** Get total storage size for a milestone (bytes). */
+  milestoneStorageSize: (projectPath: string, milestoneId: string) =>
+    ipcRenderer.invoke('milestone:storage-size', projectPath, milestoneId),
+
+  /** Get list of tracked file paths for a milestone. */
+  milestoneTrackedFiles: (projectPath: string, milestoneId: string) =>
+    ipcRenderer.invoke('milestone:tracked-files', projectPath, milestoneId),
+
+  /** Rename a milestone's message. */
+  milestoneRename: (projectPath: string, milestoneId: string, newMessage: string) =>
+    ipcRenderer.invoke('milestone:rename', projectPath, milestoneId, newMessage),
+
+  /** Set tags on a milestone. */
+  milestoneSetTags: (projectPath: string, milestoneId: string, tags: string[]) =>
+    ipcRenderer.invoke('milestone:set-tags', projectPath, milestoneId, tags),
+
+  /** Export a milestone's reconstructed files as a ZIP. */
+  milestoneExportZip: (projectPath: string, milestoneId: string) =>
+    ipcRenderer.invoke('milestone:export-zip', projectPath, milestoneId),
+
+  /** Check if project has unsaved changes since last milestone. */
+  projectHasChanges: (projectPath: string) =>
+    ipcRenderer.invoke('project:has-changes', projectPath),
+
+  /** Get storage statistics for a project. */
+  projectStorageStats: (projectPath: string) =>
+    ipcRenderer.invoke('project:storage-stats', projectPath),
+
+  /** Rename a project. */
+  projectRename: (projectPath: string, newName: string) =>
+    ipcRenderer.invoke('project:rename', projectPath, newName),
+
   // ---- Dialogs ----
 
   /** Open a native directory picker dialog. */

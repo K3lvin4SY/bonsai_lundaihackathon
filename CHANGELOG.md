@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.0] - 2026-03-08
+
+### Added
+- **Branch colors** — toggle in Settings to color-code branches on the timeline canvas using an 8-color palette (applied to nodes and edges)
+- **Milestone tags** — assign tags (release, experiment, wip, backup, archived) to milestones from the detail panel; tags appear as colored pills on timeline nodes
+- **Milestone rename** — inline rename any milestone from the detail panel
+- **Milestone export** — export any milestone as a `.zip` archive via native save dialog
+- **Branch from here** — create a new branch starting from any milestone via the detail panel
+- **Unsaved changes warning** — restore and branch-from-here actions now detect uncommitted changes and prompt before discarding
+- **Storage stats** — view total base snapshot, patch, and milestone counts from the toolbar stats button
+- **Milestone storage size** — each milestone's actual on-disk size shown in the detail panel
+- **Tracked files list** — expandable list of files captured in each milestone snapshot
+- **Search & filter** — search milestones by name, branch, or tag from the toolbar; non-matching nodes dim to 25% opacity
+- **MiniMap** — a mini-map overview of the timeline canvas for easier navigation
+- **Keyboard shortcut** — `Ctrl+M` / `Cmd+M` to quickly create a new milestone
+- **Configurable auto-watch debounce** — choose 5s, 10s, 30s, or 1 min debounce interval in Project Settings
+- **Project rename** — right-click a project on the Dashboard to rename it
+- **Recent activity on Dashboard** — project cards now show the last milestone message
+- New IPC channels: `milestone:storage-size`, `milestone:tracked-files`, `project:has-changes`, `milestone:rename`, `milestone:set-tags`, `milestone:export-zip`, `project:storage-stats`, `project:rename`, `settings:get`, `settings:set`
+
 ## [1.2.0] - 2026-03-08
 
 ### Added
