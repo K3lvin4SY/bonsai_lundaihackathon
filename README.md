@@ -1,4 +1,4 @@
-# 🌿 Bonsai
+# <img src="assets/images/icon.png" alt="Bonsai Icon" style="height: 1em; vertical-align: middle; margin-bottom: 0.2em;"> Bonsai
 
 > Version history for creative people — no Git knowledge required.
 
