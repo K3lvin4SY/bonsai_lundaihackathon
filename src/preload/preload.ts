@@ -56,4 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Open a native file picker dialog. */
   openFile: (title?: string, defaultPath?: string, filters?: { name: string; extensions: string[] }[]) =>
     ipcRenderer.invoke('dialog:open-file', title, defaultPath, filters),
+
+  /** Current OS platform (e.g. 'darwin', 'win32', 'linux'). */
+  platform: process.platform,
 });

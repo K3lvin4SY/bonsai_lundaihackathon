@@ -5,7 +5,7 @@
  * renderer (React frontend) calls via window.electronAPI.
  */
 
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import * as path from 'path';
 import {
   projectCreate,
@@ -28,6 +28,7 @@ function createWindow(): void {
     height: 800,
     frame: process.platform === 'darwin' || process.platform === 'win32',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    autoHideMenuBar: process.platform === 'win32' || process.platform === 'linux',
     title: 'Bonsai',
     icon: path.join(__dirname, '../../assets/images/icon.png'),
     webPreferences: {
