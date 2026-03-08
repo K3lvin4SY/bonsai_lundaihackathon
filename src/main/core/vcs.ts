@@ -16,6 +16,7 @@ import * as fsSync from 'fs';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import simpleGit, { SimpleGit } from 'simple-git';
+import { autoWatchRefreshBlacklist } from './autowatch';
 
 const uuidv4 = randomUUID;
 
@@ -113,6 +114,7 @@ export interface GlobalRegistry {
   branches: string[];
   milestones: Record<string, MilestoneNode>;
   autoWatch?: boolean;
+  blacklist?: string[];
 }
 
 export interface MilestoneNode {
@@ -227,11 +229,31 @@ function isBinaryFile(fileName: string): boolean {
 }
 
 /**
+ * Check if a relative path is covered by the blacklist.
+ * Matches exact paths as well as any child paths of blacklisted directories.
+ */
+function isBlacklisted(relativePath: string, blacklist: string[]): boolean {
+  if (blacklist.length === 0) return false;
+  const normalized = relativePath.replace(/\\/g, '/');
+  for (const item of blacklist) {
+    const normalizedItem = item.replace(/\\/g, '/');
+    if (
+      normalized === normalizedItem ||
+      normalized.startsWith(normalizedItem + '/')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Recursively list all files under `dir`, returning paths relative to `root`.
  */
 async function listFilesRecursive(
   dir: string,
   root: string,
+  blacklist: string[] = [],
 ): Promise<string[]> {
   const results: string[] = [];
   let entries: fsSync.Dirent[];
@@ -242,6 +264,11 @@ async function listFilesRecursive(
   }
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
+    const relPath = path.relative(root, fullPath);
+
+    // Check user-configured blacklist
+    if (isBlacklisted(relPath, blacklist)) continue;
+
     if (entry.isDirectory()) {
       // Skip hidden directories and our bookkeeping folders
       if (
@@ -251,7 +278,7 @@ async function listFilesRecursive(
       ) {
         continue;
       }
-      results.push(...(await listFilesRecursive(fullPath, root)));
+      results.push(...(await listFilesRecursive(fullPath, root, blacklist)));
     } else {
       // Skip bookkeeping files
       if (
@@ -470,9 +497,12 @@ async function saveProjectsList(list: ProjectEntry[]): Promise<void> {
 // .gitignore builder
 // ---------------------------------------------------------------------------
 
-function buildGitignore(): string {
-  return [
+function buildGitignore(blacklist: string[] = []): string {
+  const lines = [
     '# === Bonsai — auto-generated ===',
+  ];
+
+  const body = [
     '',
     '# Heavy binary working files',
     '*.psd',
@@ -544,8 +574,20 @@ function buildGitignore(): string {
     'node_modules/',
     '.DS_Store',
     'Thumbs.db',
-    '',
-  ].join('\n');
+  ];
+
+  lines.push(...body);
+
+  if (blacklist.length > 0) {
+    lines.push('');
+    lines.push('# User blacklisted files/folders');
+    for (const item of blacklist) {
+      lines.push('/' + item.replace(/\\/g, '/'));
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
 }
 
 // ===================================================================
@@ -768,8 +810,15 @@ export async function milestoneCreateInitial(
   const milestoneId = uuidv4();
   const now = new Date().toISOString();
 
+  // Load blacklist from registry
+  let blacklist: string[] = [];
+  try {
+    const reg = await readJson<GlobalRegistry>(registryPath(projectPath));
+    blacklist = reg.blacklist || [];
+  } catch { /* registry may not exist yet */ }
+
   // 1. Discover binary files in the project root
-  const binaryFiles = await listFilesRecursive(projectPath, projectPath);
+  const binaryFiles = await listFilesRecursive(projectPath, projectPath, blacklist);
   console.log(`[vcs] found ${binaryFiles.length} binary file(s)`);
 
   // 2. Copy binaries to .app_data/base/ (use a unique base-file name)
@@ -803,7 +852,7 @@ export async function milestoneCreateInitial(
   // Make sure .gitignore exists (in case project:create was skipped)
   const giPath = path.join(projectPath, '.gitignore');
   if (!fsSync.existsSync(giPath)) {
-    await fs.writeFile(giPath, buildGitignore(), 'utf-8');
+    await fs.writeFile(giPath, buildGitignore(blacklist), 'utf-8');
   }
 
   // 5. Git add & commit (use '.' so ALL non-binary files are staged;
@@ -849,6 +898,7 @@ export async function milestoneCreate(
     throw new Error('No active milestone — run milestone:create-initial first');
   }
   const parentNode = registry.milestones[parentId];
+  const blacklist = registry.blacklist || [];
 
   // If parent already has children → create a new Git branch
   const git = getGit(projectPath);
@@ -873,8 +923,8 @@ export async function milestoneCreate(
     commitStatePath(projectPath),
   );
 
-  // Discover current binary files on disk
-  const currentFiles = await listFilesRecursive(projectPath, projectPath);
+  // Discover current binary files on disk (respecting blacklist)
+  const currentFiles = await listFilesRecursive(projectPath, projectPath, blacklist);
 
   const milestoneId = uuidv4();
   const now = new Date().toISOString();
@@ -1110,6 +1160,50 @@ export async function milestoneDelete(
     return { status: 'success' };
   } catch (err: any) {
     console.error('[vcs] milestone:delete  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// blacklist:get
+// ------------------------------------------------------------------
+
+export async function blacklistGet(
+  projectPath: string,
+): Promise<string[]> {
+  console.log(`[vcs] blacklist:get  path=${projectPath}`);
+  const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+  return registry.blacklist || [];
+}
+
+// ------------------------------------------------------------------
+// blacklist:set
+// ------------------------------------------------------------------
+
+export async function blacklistSet(
+  projectPath: string,
+  items: string[],
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] blacklist:set  path=${projectPath}  items=${JSON.stringify(items)}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    registry.blacklist = items;
+    await writeJson(registryPath(projectPath), registry);
+
+    // Regenerate .gitignore so blacklisted items are git-ignored too
+    await fs.writeFile(
+      path.join(projectPath, '.gitignore'),
+      buildGitignore(items),
+      'utf-8',
+    );
+
+    // Refresh the auto-watch cache so it immediately respects the new blacklist
+    autoWatchRefreshBlacklist(projectPath, items);
+
+    console.log('[vcs] blacklist:set  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] blacklist:set  ERROR', err);
     return { status: 'error' };
   }
 }

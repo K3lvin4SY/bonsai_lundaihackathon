@@ -16,6 +16,8 @@ import {
   milestoneCreate,
   milestoneRestore,
   milestoneDelete,
+  blacklistGet,
+  blacklistSet,
 } from './core/vcs';
 import {
   autoWatchStart,
@@ -188,6 +190,24 @@ function registerIpcHandlers(): void {
     async (_event, projectPath: string) => {
       console.log(`[ipc] autowatch:status  path=${projectPath}`);
       return autoWatchStatus(projectPath);
+    },
+  );
+
+  // ---- blacklist:get ----
+  ipcMain.handle(
+    'blacklist:get',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] blacklist:get  path=${projectPath}`);
+      return blacklistGet(projectPath);
+    },
+  );
+
+  // ---- blacklist:set ----
+  ipcMain.handle(
+    'blacklist:set',
+    async (_event, projectPath: string, items: string[]) => {
+      console.log(`[ipc] blacklist:set  path=${projectPath}`);
+      return blacklistSet(projectPath, items);
     },
   );
 }

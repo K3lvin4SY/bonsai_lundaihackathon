@@ -81,6 +81,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   autoWatchStatus: (projectPath: string) =>
     ipcRenderer.invoke('autowatch:status', projectPath),
 
+  // ---- Blacklist ----
+
+  /** Get the blacklist (ignored files/folders) for a project. */
+  blacklistGet: (projectPath: string) =>
+    ipcRenderer.invoke('blacklist:get', projectPath),
+
+  /** Set the blacklist (ignored files/folders) for a project. */
+  blacklistSet: (projectPath: string, items: string[]) =>
+    ipcRenderer.invoke('blacklist:set', projectPath, items),
+
   /** Listen for auto-watch milestone creation events from the backend. */
   onAutoWatchMilestoneCreated: (callback: (projectPath: string, milestoneId: string) => void) => {
     const handler = (_event: any, projectPath: string, milestoneId: string) => {

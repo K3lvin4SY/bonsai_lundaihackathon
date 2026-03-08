@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0] - 2026-03-08
+
+### Added
+- **Blacklist** — per-project file/folder exclusion list accessible from Project Settings
+  - Blacklisted items are completely ignored: no base copies, no xdelta3 patches, no git tracking
+  - "Add File" and "Add Folder" buttons open a native file picker rooted at the project directory
+  - Files/folders outside the project directory are rejected
+  - Remove items instantly with a trash icon
+  - Blacklist entries are persisted in the project registry and survive app restarts
+  - `.gitignore` is automatically regenerated when the blacklist changes
+- New IPC channels: `blacklist:get`, `blacklist:set`
+
 ## [1.1.0] - 2026-03-08
 
 ### Added

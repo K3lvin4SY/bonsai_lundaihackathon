@@ -42,6 +42,8 @@ interface WatcherEntry {
   pendingRetrigger: boolean;
   /** When true, file-change events are silently ignored (e.g. during restore). */
   suspended: boolean;
+  /** Cached copy of the project blacklist so change events can be filtered. */
+  blacklist: string[];
 }
 
 /** Active watchers keyed by project path. */
@@ -50,6 +52,21 @@ const watchers = new Map<string, WatcherEntry>();
 // ---------------------------------------------------------------------------
 // Persistence helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Refresh the cached blacklist for an active watcher.
+ * Called by vcs.ts when the blacklist is updated so the watcher
+ * immediately starts respecting the new list.
+ */
+export function autoWatchRefreshBlacklist(
+  projectPath: string,
+  blacklist: string[],
+): void {
+  const entry = watchers.get(projectPath);
+  if (entry) {
+    entry.blacklist = blacklist;
+  }
+}
 
 async function setAutoWatchFlag(projectPath: string, value: boolean): Promise<void> {
   try {
@@ -81,12 +98,20 @@ export async function autoWatchStart(
   console.log(`[autowatch] starting watcher for ${projectPath}`);
 
   try {
+    // Load the blacklist from the project registry
+    let blacklist: string[] = [];
+    try {
+      const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+      blacklist = registry.blacklist || [];
+    } catch { /* registry may not exist yet */ }
+
     const entry: WatcherEntry = {
       watcher: null as any,
       debounceTimer: null,
       busy: false,
       pendingRetrigger: false,
       suspended: false,
+      blacklist,
     };
 
     const onChange = (eventType: string, filename: string | null) => {
@@ -96,6 +121,15 @@ export async function autoWatchStart(
       if (filename) {
         const topLevel = filename.split(/[\\/]/)[0];
         if (IGNORED_NAMES.has(topLevel)) return;
+
+        // Ignore events from blacklisted files/folders
+        const normalized = filename.replace(/\\/g, '/');
+        if (entry.blacklist.some((item) => {
+          const normalizedItem = item.replace(/\\/g, '/');
+          return normalized === normalizedItem || normalized.startsWith(normalizedItem + '/');
+        })) {
+          return;
+        }
       }
 
       console.log(`[autowatch] change detected: ${eventType} ${filename ?? '(unknown)'}`);

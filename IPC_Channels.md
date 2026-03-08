@@ -25,6 +25,8 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`autowatch:milestone-created`](#autowatchmilestone-created) | `onAutoWatchMilestoneCreated()` | Main → Renderer |
 | [`settings:get`](#settingsget) | `settingsGet()` | Renderer → Main |
 | [`settings:set`](#settingsset) | `settingsSet()` | Renderer → Main |
+| [`blacklist:get`](#blacklistget) | `blacklistGet()` | Renderer → Main |
+| [`blacklist:set`](#blacklistset) | `blacklistSet()` | Renderer → Main |
 
 ---
 
@@ -716,4 +718,75 @@ const cleanup = window.electronAPI.onAutoWatchMilestoneCreated(
 ```jsonc
 // Payload sent by main process
 ["/home/user/city-poster", "f47ac10b-58cc-4372-a567-0e02b2c3d479"]
+```
+
+---
+
+## `blacklist:get`
+
+Retrieve the blacklist (list of ignored file/folder paths) for a project. Blacklisted items are completely excluded from Bonsai’s version tracking — no base copies, no xdelta3 patches, and they are added to `.gitignore`.
+
+### Renderer call
+
+```ts
+const items = await window.electronAPI.blacklistGet(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+string[]   // Array of relative paths (e.g. ["renders", "archive/old-assets", "tmp-export.psd"])
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+["renders", "archive/old-assets", "tmp-export.psd"]
+```
+
+---
+
+## `blacklist:set`
+
+Replace the entire blacklist for a project. Persists the list in the project registry and regenerates `.gitignore` to include the blacklisted paths.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.blacklistSet(projectPath, items);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `items` | `string[]` | Array of relative paths to ignore (files and/or folders) |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", ["renders", "archive/old-assets", "tmp-export.psd"]]
+
+// Response
+{
+  "status": "success"
+}
 ```
