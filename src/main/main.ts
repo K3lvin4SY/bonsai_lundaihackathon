@@ -28,6 +28,8 @@ function createWindow(): void {
     height: 800,
     frame: process.platform === 'darwin' || process.platform === 'win32',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    title: 'Bonsai',
+    icon: path.join(__dirname, '../../assets/images/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       nodeIntegration: false,
