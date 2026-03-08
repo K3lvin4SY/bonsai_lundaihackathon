@@ -19,6 +19,9 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`milestone:create`](#milestonecreate) | `milestoneCreate()` | Renderer → Main |
 | [`milestone:restore`](#milestonerestore) | `milestoneRestore()` | Renderer → Main |
 | [`milestone:delete`](#milestonedelete) | `milestoneDelete()` | Renderer → Main |
+| [`autowatch:start`](#autowatchstart) | `autoWatchStart()` | Renderer → Main |
+| [`autowatch:stop`](#autowatchstop) | `autoWatchStop()` | Renderer → Main |
+| [`autowatch:status`](#autowatchstatus) | `autoWatchStatus()` | Renderer → Main |
 | [`settings:get`](#settingsget) | `settingsGet()` | Renderer → Main |
 | [`settings:set`](#settingsset) | `settingsSet()` | Renderer → Main |
 
@@ -569,3 +572,113 @@ const result = await window.electronAPI.settingsSet(key, value);
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `launchToTray` | `boolean` | `false` | When true, Bonsai starts minimized to the system tray instead of showing the main window |
+
+---
+
+## `autowatch:start`
+
+Start watching a project folder for file changes. When a change is detected, Bonsai waits 10 seconds after the last change before automatically creating a milestone. This debounce prevents corruption from rapid saves (e.g. an application writing multiple files at once). Changes to internal bookkeeping directories (`.git`, `.app_data`, `.tmp`, `node_modules`) are ignored.
+
+The watcher is **off by default** and must be explicitly enabled per project.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.autoWatchStart(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ status: 'success' | 'error'; error?: string }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `autowatch:stop`
+
+Stop watching a project folder for file changes. Any pending debounce timer is cancelled.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.autoWatchStop(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `autowatch:status`
+
+Check whether auto-watch is currently active for a project.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.autoWatchStatus(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ active: boolean }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "active": true
+}
+```

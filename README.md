@@ -161,6 +161,9 @@ The full IPC channel specification (parameters, response shapes, and usage examp
 | `milestoneCreate(path, message)` | Save the current state as a new milestone |
 | `milestoneRestore(path, milestoneId)` | Rewind working files to a past milestone |
 | `milestoneDelete(path, milestoneId)` | Delete a leaf milestone |
+| `autoWatchStart(path)` | Start auto-watching a project folder for changes |
+| `autoWatchStop(path)` | Stop auto-watching a project folder |
+| `autoWatchStatus(path)` | Check if auto-watch is active for a project |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |
 

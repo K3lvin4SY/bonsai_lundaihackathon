@@ -17,6 +17,12 @@ import {
   milestoneRestore,
   milestoneDelete,
 } from './core/vcs';
+import {
+  autoWatchStart,
+  autoWatchStop,
+  autoWatchStatus,
+  autoWatchStopAll,
+} from './core/autowatch';
 
 // ---------------------------------------------------------------------------
 // Window
@@ -149,6 +155,33 @@ function registerIpcHandlers(): void {
       return { canceled: result.canceled, path: result.filePaths[0] ?? null };
     },
   );
+
+  // ---- autowatch:start ----
+  ipcMain.handle(
+    'autowatch:start',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] autowatch:start  path=${projectPath}`);
+      return autoWatchStart(projectPath);
+    },
+  );
+
+  // ---- autowatch:stop ----
+  ipcMain.handle(
+    'autowatch:stop',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] autowatch:stop  path=${projectPath}`);
+      return autoWatchStop(projectPath);
+    },
+  );
+
+  // ---- autowatch:status ----
+  ipcMain.handle(
+    'autowatch:status',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] autowatch:status  path=${projectPath}`);
+      return autoWatchStatus(projectPath);
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -165,5 +198,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  autoWatchStopAll();
   if (process.platform !== 'darwin') app.quit();
 });

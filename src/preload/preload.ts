@@ -67,6 +67,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   settingsSet: (key: string, value: unknown) =>
     ipcRenderer.invoke('settings:set', key, value),
 
+  // ---- Auto-Watch ----
+
+  /** Start auto-watching a project folder for file changes. */
+  autoWatchStart: (projectPath: string) =>
+    ipcRenderer.invoke('autowatch:start', projectPath),
+
+  /** Stop auto-watching a project folder. */
+  autoWatchStop: (projectPath: string) =>
+    ipcRenderer.invoke('autowatch:stop', projectPath),
+
+  /** Check if auto-watch is active for a project. */
+  autoWatchStatus: (projectPath: string) =>
+    ipcRenderer.invoke('autowatch:status', projectPath),
+
   /** Current OS platform (e.g. 'darwin', 'win32', 'linux'). */
   platform: process.platform,
 });
