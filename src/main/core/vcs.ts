@@ -112,6 +112,7 @@ export interface GlobalRegistry {
   activeBranch: string;
   branches: string[];
   milestones: Record<string, MilestoneNode>;
+  autoWatch?: boolean;
 }
 
 export interface MilestoneNode {
@@ -194,6 +195,9 @@ function tmpPath(projectPath: string): string {
 function registryPath(projectPath: string): string {
   return path.join(appDataPath(projectPath), GLOBAL_REGISTRY_FILE);
 }
+
+// Re-export so autowatch.ts can read/write the registry
+export { registryPath, readJson, writeJson };
 
 function commitStatePath(projectPath: string): string {
   return path.join(projectPath, COMMIT_STATE_FILE);

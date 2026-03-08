@@ -22,6 +22,7 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`autowatch:start`](#autowatchstart) | `autoWatchStart()` | Renderer → Main |
 | [`autowatch:stop`](#autowatchstop) | `autoWatchStop()` | Renderer → Main |
 | [`autowatch:status`](#autowatchstatus) | `autoWatchStatus()` | Renderer → Main |
+| [`autowatch:milestone-created`](#autowatchmilestone-created) | `onAutoWatchMilestoneCreated()` | Main → Renderer |
 | [`settings:get`](#settingsget) | `settingsGet()` | Renderer → Main |
 | [`settings:set`](#settingsset) | `settingsSet()` | Renderer → Main |
 
@@ -681,4 +682,38 @@ const result = await window.electronAPI.autoWatchStatus(projectPath);
 {
   "active": true
 }
+```
+
+---
+
+## `autowatch:milestone-created`
+
+Pushed from the main process to all renderer windows whenever the auto-watch system creates a milestone. The renderer uses this to refresh the project tree in real time.
+
+This is **not** an invoke/handle channel — it uses `ipcMain → webContents.send()` / `ipcRenderer.on()`.
+
+### Renderer listener
+
+```ts
+const cleanup = window.electronAPI.onAutoWatchMilestoneCreated(
+  (projectPath, milestoneId) => {
+    console.log(`Auto-save milestone ${milestoneId} created for ${projectPath}`);
+  }
+);
+
+// Call cleanup() to unsubscribe
+```
+
+### Payload
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path of the project that was auto-saved |
+| `milestoneId` | `string` | UUID of the newly created milestone |
+
+### Example
+
+```jsonc
+// Payload sent by main process
+["/home/user/city-poster", "f47ac10b-58cc-4372-a567-0e02b2c3d479"]
 ```

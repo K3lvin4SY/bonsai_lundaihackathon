@@ -5,11 +5,21 @@
  * milestones after a 10-second debounce period. This ensures multiple
  * rapid saves (e.g. an application writing to disk) are coalesced into
  * a single milestone, preventing corruption or noise.
+ *
+ * The setting is persisted in each project's global_registry.json so it
+ * survives app restarts.  On startup, `autoWatchRestoreAll()` re-activates
+ * watchers for every project that had auto-watch enabled.
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
+import { BrowserWindow } from 'electron';
 import { milestoneCreate } from './vcs';
+import {
+  registryPath,
+  readJson,
+  writeJson,
+  type GlobalRegistry,
+} from './vcs';
 
 const DEBOUNCE_MS = 10_000; // 10 seconds
 
@@ -30,18 +40,40 @@ interface WatcherEntry {
   busy: boolean;
   /** Set to true if another change arrived while busy, so we re-trigger after finish. */
   pendingRetrigger: boolean;
+  /** When true, file-change events are silently ignored (e.g. during restore). */
+  suspended: boolean;
 }
 
 /** Active watchers keyed by project path. */
 const watchers = new Map<string, WatcherEntry>();
 
+// ---------------------------------------------------------------------------
+// Persistence helpers
+// ---------------------------------------------------------------------------
+
+async function setAutoWatchFlag(projectPath: string, value: boolean): Promise<void> {
+  try {
+    const regPath = registryPath(projectPath);
+    const registry = await readJson<GlobalRegistry>(regPath);
+    registry.autoWatch = value;
+    await writeJson(regPath, registry);
+  } catch (err) {
+    console.error('[autowatch] failed to persist autoWatch flag:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 /**
  * Start watching `projectPath` for file changes.
  * If already watching, this is a no-op.
+ * Persists the setting in the project's registry.
  */
-export function autoWatchStart(
+export async function autoWatchStart(
   projectPath: string,
-): { status: 'success' | 'error'; error?: string } {
+): Promise<{ status: 'success' | 'error'; error?: string }> {
   if (watchers.has(projectPath)) {
     return { status: 'success' }; // already watching
   }
@@ -54,9 +86,12 @@ export function autoWatchStart(
       debounceTimer: null,
       busy: false,
       pendingRetrigger: false,
+      suspended: false,
     };
 
     const onChange = (eventType: string, filename: string | null) => {
+      if (entry.suspended) return;
+
       // Ignore events from our own bookkeeping directories
       if (filename) {
         const topLevel = filename.split(/[\\/]/)[0];
@@ -86,11 +121,14 @@ export function autoWatchStart(
 
     entry.watcher.on('error', (err) => {
       console.error(`[autowatch] watcher error for ${projectPath}:`, err);
-      // Clean up on error
       autoWatchStop(projectPath);
     });
 
     watchers.set(projectPath, entry);
+
+    // Persist the flag
+    await setAutoWatchFlag(projectPath, true);
+
     return { status: 'success' };
   } catch (err: any) {
     console.error('[autowatch] failed to start watcher:', err);
@@ -100,13 +138,16 @@ export function autoWatchStart(
 
 /**
  * Stop watching a project folder.
+ * Persists the setting in the project's registry.
  */
-export function autoWatchStop(
+export async function autoWatchStop(
   projectPath: string,
-): { status: 'success' | 'error' } {
+): Promise<{ status: 'success' | 'error' }> {
   const entry = watchers.get(projectPath);
   if (!entry) {
-    return { status: 'success' }; // nothing to stop
+    // Still persist the flag off in case it was stuck
+    await setAutoWatchFlag(projectPath, false);
+    return { status: 'success' };
   }
 
   console.log(`[autowatch] stopping watcher for ${projectPath}`);
@@ -120,6 +161,8 @@ export function autoWatchStop(
     // ignore close errors
   }
   watchers.delete(projectPath);
+
+  await setAutoWatchFlag(projectPath, false);
   return { status: 'success' };
 }
 
@@ -133,11 +176,65 @@ export function autoWatchStatus(
 }
 
 /**
+ * Temporarily suspend the watcher for a project (e.g. during milestone restore).
+ * Any pending debounce timer is cancelled.
+ */
+export function autoWatchSuspend(projectPath: string): void {
+  const entry = watchers.get(projectPath);
+  if (!entry) return;
+  console.log(`[autowatch] suspending watcher for ${projectPath}`);
+  entry.suspended = true;
+  if (entry.debounceTimer) {
+    clearTimeout(entry.debounceTimer);
+    entry.debounceTimer = null;
+  }
+  entry.pendingRetrigger = false;
+}
+
+/**
+ * Resume a suspended watcher.
+ */
+export function autoWatchResume(projectPath: string): void {
+  const entry = watchers.get(projectPath);
+  if (!entry) return;
+  console.log(`[autowatch] resuming watcher for ${projectPath}`);
+  entry.suspended = false;
+}
+
+/**
  * Stop all active watchers. Called on app quit.
  */
 export function autoWatchStopAll(): void {
   for (const projectPath of watchers.keys()) {
-    autoWatchStop(projectPath);
+    // Just close — don't persist (we want the flag to stay true so it restarts)
+    const entry = watchers.get(projectPath);
+    if (entry) {
+      if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
+      try { entry.watcher.close(); } catch {}
+    }
+  }
+  watchers.clear();
+}
+
+/**
+ * On app startup, re-activate watchers for all projects whose
+ * `autoWatch` flag is true in their registry.
+ */
+export async function autoWatchRestoreAll(): Promise<void> {
+  // Read global projects list to get all project paths
+  const { projectList } = await import('./vcs');
+  const projects = await projectList();
+  for (const project of projects) {
+    try {
+      const regPath = registryPath(project.projectPath);
+      const registry = await readJson<GlobalRegistry>(regPath);
+      if (registry.autoWatch) {
+        console.log(`[autowatch] restoring watcher for ${project.projectPath}`);
+        await autoWatchStart(project.projectPath);
+      }
+    } catch {
+      // Project may be invalid — skip
+    }
   }
 }
 
@@ -152,13 +249,19 @@ async function triggerMilestone(
   entry.busy = true;
   entry.pendingRetrigger = false;
 
-  const message = 'Auto-save';
+  const message = 'Autosave';
 
   console.log(`[autowatch] creating milestone: "${message}"`);
 
   try {
     const result = await milestoneCreate(projectPath, message);
     console.log(`[autowatch] milestone created: ${result.milestoneId}`);
+
+    // Notify the renderer so the tree updates visually
+    const wins = BrowserWindow.getAllWindows();
+    for (const win of wins) {
+      win.webContents.send('autowatch:milestone-created', projectPath, result.milestoneId);
+    }
   } catch (err) {
     console.error('[autowatch] milestone creation failed:', err);
   } finally {

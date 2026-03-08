@@ -22,6 +22,9 @@ import {
   autoWatchStop,
   autoWatchStatus,
   autoWatchStopAll,
+  autoWatchSuspend,
+  autoWatchResume,
+  autoWatchRestoreAll,
 } from './core/autowatch';
 
 // ---------------------------------------------------------------------------
@@ -114,7 +117,12 @@ function registerIpcHandlers(): void {
     'milestone:restore',
     async (_event, projectPath: string, milestoneId: string) => {
       console.log(`[ipc] milestone:restore  path=${projectPath}  id=${milestoneId}`);
-      return milestoneRestore(projectPath, milestoneId);
+      autoWatchSuspend(projectPath);
+      try {
+        return await milestoneRestore(projectPath, milestoneId);
+      } finally {
+        autoWatchResume(projectPath);
+      }
     },
   );
 
@@ -188,9 +196,12 @@ function registerIpcHandlers(): void {
 // App lifecycle
 // ---------------------------------------------------------------------------
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerIpcHandlers();
   createWindow();
+
+  // Re-activate auto-watch for projects that had it enabled
+  await autoWatchRestoreAll();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -81,6 +81,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   autoWatchStatus: (projectPath: string) =>
     ipcRenderer.invoke('autowatch:status', projectPath),
 
+  /** Listen for auto-watch milestone creation events from the backend. */
+  onAutoWatchMilestoneCreated: (callback: (projectPath: string, milestoneId: string) => void) => {
+    const handler = (_event: any, projectPath: string, milestoneId: string) => {
+      callback(projectPath, milestoneId);
+    };
+    ipcRenderer.on('autowatch:milestone-created', handler);
+    // Return a cleanup function
+    return () => {
+      ipcRenderer.removeListener('autowatch:milestone-created', handler);
+    };
+  },
+
   /** Current OS platform (e.g. 'darwin', 'win32', 'linux'). */
   platform: process.platform,
 });

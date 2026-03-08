@@ -164,6 +164,7 @@ The full IPC channel specification (parameters, response shapes, and usage examp
 | `autoWatchStart(path)` | Start auto-watching a project folder for changes |
 | `autoWatchStop(path)` | Stop auto-watching a project folder |
 | `autoWatchStatus(path)` | Check if auto-watch is active for a project |
+| `onAutoWatchMilestoneCreated(cb)` | Listen for auto-save milestone events (Main → Renderer) |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |
 
