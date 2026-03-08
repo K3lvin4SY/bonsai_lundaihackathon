@@ -57,6 +57,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFile: (title?: string, defaultPath?: string, filters?: { name: string; extensions: string[] }[]) =>
     ipcRenderer.invoke('dialog:open-file', title, defaultPath, filters),
 
+  // ---- Settings ----
+
+  /** Get a single app setting by key. */
+  settingsGet: (key: string) =>
+    ipcRenderer.invoke('settings:get', key),
+
+  /** Set a single app setting by key. */
+  settingsSet: (key: string, value: unknown) =>
+    ipcRenderer.invoke('settings:set', key, value),
+
   /** Current OS platform (e.g. 'darwin', 'win32', 'linux'). */
   platform: process.platform,
 });

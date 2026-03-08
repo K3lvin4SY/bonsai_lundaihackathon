@@ -280,16 +280,23 @@ function xdelta3Binary(): string {
   };
   const binaryName = platformMap[process.platform] || 'xdelta3';
 
-  // In production the assets live next to the asar; during dev they are in the
-  // project root.
+  // In production, binaries end up in extraResources or app.asar.unpacked.
+  // Check those before relative __dirname paths (which may point inside the
+  // asar archive where spawn() cannot execute binaries).
   const candidates = [
+    path.join(process.resourcesPath || '', 'assets', 'bin', binaryName),
+    path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), '..', '..', '..', 'assets', 'bin', binaryName),
+    path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), '..', '..', 'assets', 'bin', binaryName),
     path.join(__dirname, '..', '..', 'assets', 'bin', binaryName),
     path.join(__dirname, '..', '..', '..', 'assets', 'bin', binaryName),
-    path.join(process.resourcesPath || '', 'assets', 'bin', binaryName),
   ];
 
+  console.log(`[vcs] xdelta3 lookup: platform=${process.platform}  binary=${binaryName}  __dirname=${__dirname}  resourcesPath=${process.resourcesPath}`);
   for (const c of candidates) {
-    if (fsSync.existsSync(c)) {
+    const exists = fsSync.existsSync(c);
+    console.log(`[vcs]   candidate: ${c}  exists=${exists}`);
+    if (exists) {
+      console.log(`[vcs] xdelta3 resolved: ${c}`);
       return c;
     }
   }

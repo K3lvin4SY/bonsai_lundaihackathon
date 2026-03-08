@@ -19,6 +19,8 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`milestone:create`](#milestonecreate) | `milestoneCreate()` | Renderer → Main |
 | [`milestone:restore`](#milestonerestore) | `milestoneRestore()` | Renderer → Main |
 | [`milestone:delete`](#milestonedelete) | `milestoneDelete()` | Renderer → Main |
+| [`settings:get`](#settingsget) | `settingsGet()` | Renderer → Main |
+| [`settings:set`](#settingsset) | `settingsSet()` | Renderer → Main |
 
 ---
 
@@ -492,3 +494,78 @@ interface MilestoneRecord {
   createdAt: string;
 }
 ```
+
+---
+
+## `settings:get`
+
+Retrieve a single app setting value by key. Settings are persisted in `~/.config/bonsai/settings.json` (or platform equivalent).
+
+### Renderer call
+
+```ts
+const value = await window.electronAPI.settingsGet(key);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `key` | `string` | The setting key to read (e.g. `"launchToTray"`) |
+
+### Response
+
+The value of the setting, or `undefined` if not set.
+
+### Example
+
+```jsonc
+// Request args
+["launchToTray"]
+
+// Response
+false
+```
+
+---
+
+## `settings:set`
+
+Update a single app setting and persist it to disk. Changes to `launchToTray` take effect immediately (creating or destroying the system tray icon).
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.settingsSet(key, value);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `key` | `string` | The setting key to update (e.g. `"launchToTray"`) |
+| `value` | `unknown` | The new value for the setting |
+
+### Response
+
+```ts
+{ status: 'success' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["launchToTray", true]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+### Available Settings
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `launchToTray` | `boolean` | `false` | When true, Bonsai starts minimized to the system tray instead of showing the main window |

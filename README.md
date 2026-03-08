@@ -72,7 +72,7 @@ bonsai/
 │   └── bin/
 │       ├── xdelta3.exe         # xdelta3 for windows
 │       ├── xdelta3-linux       # Bundled xdelta3 binaries
-│       └── xdelta3-mac
+│       └── xdelta3-macos
 ├── src/
 │   ├── main/
 │   │   ├── main.ts             # Electron main process + IPC handler registration
@@ -161,6 +161,8 @@ The full IPC channel specification (parameters, response shapes, and usage examp
 | `milestoneCreate(path, message)` | Save the current state as a new milestone |
 | `milestoneRestore(path, milestoneId)` | Rewind working files to a past milestone |
 | `milestoneDelete(path, milestoneId)` | Delete a leaf milestone |
+| `settingsGet(key)` | Read a persisted app setting |
+| `settingsSet(key, value)` | Update and persist an app setting |
 
 ---
 
