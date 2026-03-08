@@ -1,17 +1,32 @@
-# <img src="assets/images/icon.png" alt="Bonsai Icon" style="height: 1em; vertical-align: middle;"> Bonsai
+<div align="center">
 
-> Version history for creative people — no Git knowledge required.
+<img src="assets/images/icon.png" alt="Bonsai" width="90" />
+
+# Bonsai
+
+**The safety net for creative workflows — minus the developer complexity.**
+
+<br/>
+
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-CC0000?style=for-the-badge)
+![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+
+</div>
 
 ---
 
 ## Problem Statement
 
-Creative professionals (designers, illustrators, 3D artists, game developers) work with large binary files — Photoshop documents, Blender scenes, Minecraft worlds, video clips — that change constantly. They need the same safety net that software developers have: the ability to **save a snapshot of their work at any point**, **go back in time**, and **explore multiple creative directions simultaneously** without duplicating entire folders.
+Creative professionals — designers, illustrators, 3D artists, game developers — work with large binary files that change constantly: Photoshop documents, Blender scenes, Minecraft worlds, video clips. They need the same safety net that software developers have: the ability to **save a snapshot at any point**, **go back in time**, and **explore multiple creative directions simultaneously** without duplicating entire folders.
 
-Existing tools fail them in two ways:
+Existing tools fail them in two critical ways:
 
-1. **Git** is built for text/code. It bloats or breaks entirely when tracking large binary files, and its terminology (`commit`, `branch`, `merge`, `HEAD`) is intimidating to non-technical users.
-2. **Manual folder duplication** (`design_v1/`, `design_v2_FINAL/`, `design_v2_FINAL_USE_THIS/`) is unscalable, wastes disk space, and makes parallel experimentation a nightmare.
+| Problem | Why it fails |
+|---|---|
+| **Git** | Built for text/code — bloats or breaks with large binaries, and its terminology (`commit`, `branch`, `HEAD`) is intimidating to non-technical users |
+| **Manual folder duplication** | `design_v1/`, `design_v2_FINAL/`, `design_v2_FINAL_USE_THIS/` — unscalable, wastes disk space, makes parallel experimentation a nightmare |
 
 **Bonsai solves this.**
 
@@ -21,35 +36,46 @@ Existing tools fail them in two ways:
 
 Bonsai is a desktop application that gives creative projects a **visual, branch-based history** built on familiar language: **Milestones** instead of commits, **Timelines** instead of branches.
 
-Under the hood, Bonsai uses a smart hybrid storage strategy that keeps things fast and lean:
+Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 
 | Layer | Tool | Role |
 |---|---|---|
 | **Graph state** | Git | Tracks the tiny JSON blueprint for each milestone — lightning fast because Git never sees the heavy files |
 | **Binary diffing** | xdelta3 | Computes compact binary patches between milestone versions — stores *only the changes*, not full copies |
-| **Source of truth** | `global_registry.json` | A git-ignored file that holds the complete milestone tree so "traveling back in time" never erases your history |
+| **Source of truth** | `global_registry.json` | A git-ignored file that holds the complete milestone tree so time travel never erases history |
 
-### How it works
+### Core Interactions
 
-- **Save a Milestone** — Bonsai snapshots your current file state. For new files it stores a base copy; for existing files it runs `xdelta3` to store only what changed.
-- **Restore a Milestone** — Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs your files by replaying the appropriate patches.
-- **Branch a Timeline** — When you want to explore a creative direction without losing your current path, Bonsai automatically creates a new timeline (Git branch) and keeps both histories alive on the canvas.
-- **Visual Canvas** — Every milestone and timeline is rendered as an interactive node graph so you can see your entire creative history at a glance.
+| Action | What happens |
+|---|---|
+| **Save a Milestone** | Bonsai snapshots your file state. New files get a base copy; existing files get an `xdelta3` patch storing only what changed |
+| **Restore a Milestone** | Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs files by replaying patches |
+| **Branch a Timeline** | Creates a new Git branch and keeps both histories alive on the canvas — explore without losing your current path |
+| **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — your entire creative history at a glance |
+
+### Design Philosophy
+
+- **No Git vocabulary** — users see Milestones and Timelines, never commits or branches
+- **Binary-first** — the workflow is designed around large creative files, not source code
+- **Non-destructive time travel** — restoring an old milestone never erases future history; `global_registry.json` is always git-ignored and stays intact
+- **Lean storage** — only deltas are stored after the first snapshot; projects don't balloon in size as history grows
 
 ---
 
 ## Tech Stack
 
-### Backend (Electron Main Process)
+### Backend — Electron Main Process
+
 | Technology | Purpose |
 |---|---|
 | **Electron** | Cross-platform desktop shell |
 | **TypeScript** | Type-safe backend logic |
 | **Node.js `child_process`** | Spawning the bundled `xdelta3` binary |
 | **simple-git** | Programmatic Git operations (init, commit, checkout, branch) |
-| **xdelta3** | Binary delta encoding / decoding (bundled for Linux & macOS) |
+| **xdelta3** | Binary delta encoding / decoding (bundled for Linux, macOS & Windows) |
 
-### Frontend (Renderer Process)
+### Frontend — Renderer Process
+
 | Technology | Purpose |
 |---|---|
 | **React + TypeScript** | UI component framework |
@@ -60,6 +86,7 @@ Under the hood, Bonsai uses a smart hybrid storage strategy that keeps things fa
 | **Tabler Icons** | Icon set |
 
 ### IPC Bridge
+
 The frontend and backend communicate exclusively through Electron's `contextBridge` / `ipcMain.handle` pattern. The preload script exposes a typed `window.electronAPI` object so the renderer never touches Node directly.
 
 ---
@@ -70,9 +97,9 @@ The frontend and backend communicate exclusively through Electron's `contextBrid
 bonsai/
 ├── assets/
 │   └── bin/
-│       ├── xdelta3.exe         # xdelta3 for windows
-│       ├── xdelta3-linux       # Bundled xdelta3 binaries
-│       └── xdelta3-macos
+│       ├── xdelta3.exe         # xdelta3 for Windows
+│       ├── xdelta3-linux       # xdelta3 for Linux
+│       └── xdelta3-macos       # xdelta3 for macOS
 ├── src/
 │   ├── main/
 │   │   ├── main.ts             # Electron main process + IPC handler registration
@@ -86,7 +113,7 @@ bonsai/
 └── IPC_Channels.md             # Full IPC API reference
 ```
 
-### Key runtime files (created inside each project folder)
+**Key runtime files created inside each project folder:**
 
 ```
 <your-project-folder>/
@@ -101,16 +128,27 @@ bonsai/
 
 ---
 
-## Prerequisites
+## Releases
 
-- **Node.js** ≥ 18
-- **npm** ≥ 9
-- **Git** installed and available on your `PATH`
-- Linux or macOS (bundled `xdelta3` binaries are included; Windows support requires adding an `xdelta3.exe` to `assets/bin/`)
+Pre-built installers are available for all major platforms on the [Releases](../../releases) page:
+
+| Platform | Format |
+|---|---|
+| ![Windows](https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white) **Windows** | `.exe` installer |
+| ![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white) **macOS** | `.dmg` image |
+| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) **Linux** | `.AppImage` |
+
+> No build step required — just download, install, and launch.
 
 ---
 
 ## Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **npm** ≥ 9
+- **Git** installed and available on your `PATH`
 
 ### 1. Clone (with submodules)
 
@@ -118,17 +156,13 @@ The renderer is a git submodule. Use `--recurse-submodules` when cloning:
 
 ```bash
 git clone --recurse-submodules git@github.com:K3lvin4SY/bonsai_lundaihackathon.git
+cd bonsai_lundaihackathon/
 ```
 
-If you already cloned without it:
+If you already cloned without the flag:
 
 ```bash
 git submodule update --init --recursive
-```
-
-Go into the repository folder:
-```bash
-cd bonsai_lundaihackathon/
 ```
 
 ### 2. Install dependencies
@@ -150,7 +184,7 @@ This compiles all TypeScript sources into `dist/`, copies the renderer output, a
 
 ## IPC API Reference
 
-The full IPC channel specification (parameters, response shapes, and usage examples) is documented in [IPC_Channels.md](IPC_Channels.md).
+The full IPC channel specification — parameters, response shapes, and usage examples — is documented in [IPC_Channels.md](IPC_Channels.md).
 
 | Method | Description |
 |---|---|
@@ -169,12 +203,3 @@ The full IPC channel specification (parameters, response shapes, and usage examp
 | `blacklistSet(path, items)` | Update the ignored files/folders list for a project |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |
-
----
-
-## Design Philosophy
-
-- **No Git vocabulary** — users see Milestones and Timelines, never commits or branches.
-- **Binary-first** — the workflow is designed around large creative files, not source code.
-- **Non-destructive time travel** — restoring an old milestone never erases future history; `global_registry.json` is always git-ignored and stays intact.
-- **Lean storage** — only deltas are stored after the first snapshot; projects don't balloon in size as history grows.
