@@ -4,11 +4,40 @@
   "main": "dist/main/main.js",
   "scripts": {
     "build": "cd src/renderer && npm run build && cd ../.. && tsc",
+    "dist": "npm run build && electron-builder",
     "start": "npm run build && electron ."
+  },
+  "build": {
+    "appId": "com.bonsai.app",
+    "productName": "Bonsai",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "assets/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/bin",
+        "to": "assets/bin"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "electron": "^29.0.0",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.0.0"
   },
   "dependencies": {
