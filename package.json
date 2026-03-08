@@ -6,7 +6,8 @@
   "main": "dist/main/main.js",
   "scripts": {
     "build": "cd src/renderer && npm run build && cd ../.. && tsc",
-    "release": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
+    "generate:icon": "png2icons assets/images/icon.png assets/images/icon -icowe -bc",
+    "release": "npm run generate:icon && npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
     "start": "npm run build && electron ."
   },
   "build": {
@@ -47,6 +48,7 @@
     "cross-env": "^10.1.0",
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3",
+    "png2icons": "^2.0.1",
     "typescript": "^5.0.0"
   },
   "dependencies": {
