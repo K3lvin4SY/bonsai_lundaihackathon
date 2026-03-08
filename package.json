@@ -1,6 +1,6 @@
 {
   "name": "bonsai",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Bonsai version control application",
   "author": "Bonsai Team",
   "main": "dist/main/main.js",
