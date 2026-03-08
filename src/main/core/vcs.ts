@@ -606,6 +606,34 @@ function buildGitignore(blacklist: string[] = []): string {
   return lines.join('\n');
 }
 
+/**
+ * Ensures .gitignore is never committed to git.
+ * Adds it to .git/info/exclude (repo-local, not committed) and removes
+ * it from the git index if it was previously tracked.
+ * This prevents `git checkout` from failing when the blacklist changed.
+ */
+async function ensureGitignoreUntracked(projectPath: string): Promise<void> {
+  const gitInfoDir = path.join(projectPath, '.git', 'info');
+  const excludeFile = path.join(gitInfoDir, 'exclude');
+  await ensureDir(gitInfoDir);
+
+  let content = '';
+  try {
+    content = await fs.readFile(excludeFile, 'utf-8');
+  } catch { /* file doesn't exist yet */ }
+
+  if (!content.split('\n').some(line => line.trim() === '.gitignore')) {
+    content = (content === '' || content.endsWith('\n') ? content : content + '\n') + '.gitignore\n';
+    await fs.writeFile(excludeFile, content, 'utf-8');
+  }
+
+  // Remove .gitignore from git index if it was previously tracked
+  const git = getGit(projectPath);
+  try {
+    await git.raw(['rm', '--cached', '--ignore-unmatch', '.gitignore']);
+  } catch { /* not a git repo yet or already untracked */ }
+}
+
 // ===================================================================
 // PUBLIC API
 // ===================================================================
@@ -879,7 +907,11 @@ export async function milestoneCreateInitial(
     await fs.writeFile(giPath, buildGitignore(blacklist), 'utf-8');
   }
 
-  // 5. Git add & commit (use '.' so ALL non-binary files are staged;
+  // 5. Ensure .gitignore is not git-tracked (prevents checkout conflicts
+  //    when the blacklist changes between milestones)
+  await ensureGitignoreUntracked(projectPath);
+
+  // Git add & commit (use '.' so ALL non-binary files are staged;
   //    binary files are already in .gitignore so they will be skipped)
   await git.add('.');
   const commitResult = await git.commit(message || 'Initial milestone');
@@ -928,18 +960,26 @@ export async function milestoneCreate(
   const git = getGit(projectPath);
   let branchName = parentNode.branch;
 
+  // Ensure .gitignore is not tracked before any checkout (prevents conflicts
+  // when the blacklist was changed since the last milestone commit)
+  await ensureGitignoreUntracked(projectPath);
+  // Re-write .gitignore in case git cleared it during a previous force-checkout
+  await fs.writeFile(path.join(projectPath, '.gitignore'), buildGitignore(blacklist), 'utf-8');
+
   if (parentNode.children.length > 0) {
     branchName = `branch-${uuidv4().slice(0, 8)}`;
     console.log(`[vcs] parent already has children, creating branch ${branchName}`);
     // Checkout the parent commit first, then create branch
-    await git.checkout(parentNode.commitHash);
+    // Use -f (force) to discard any uncommitted changes to tracked files
+    await git.raw(['checkout', '-f', parentNode.commitHash]);
     await git.checkoutLocalBranch(branchName);
     if (!registry.branches.includes(branchName)) {
       registry.branches.push(branchName);
     }
   } else {
     // Ensure we're on the correct branch (not detached HEAD from a restore)
-    await git.checkout(branchName);
+    // Use -f (force) to discard any uncommitted changes to tracked files
+    await git.raw(['checkout', '-f', branchName]);
   }
 
   // Read parent commit_state so we know which files are tracked & their patches
@@ -1034,6 +1074,11 @@ export async function milestoneCreate(
   };
   await writeJson(commitStatePath(projectPath), commitState);
 
+  // Ensure .gitignore is still excluded from staging (force-checkout above
+  // may have restored a tracked version of it)
+  await ensureGitignoreUntracked(projectPath);
+  await fs.writeFile(path.join(projectPath, '.gitignore'), buildGitignore(blacklist), 'utf-8');
+
   // Git add & commit (use '.' so ALL non-binary files are staged;
   //    binary files are already in .gitignore so they will be skipped)
   await git.add('.');
@@ -1076,9 +1121,21 @@ export async function milestoneRestore(
       throw new Error(`Milestone ${milestoneId} not found in registry`);
     }
 
-    // 1. Git checkout the commit (detached HEAD is fine)
+    // 1. Git checkout the commit (detached HEAD is fine).
+    //    Use -f (force) to discard any uncommitted changes (e.g. .gitignore
+    //    modified by blacklistSet without a corresponding commit).
     const git = getGit(projectPath);
-    await git.checkout(node.commitHash);
+    await ensureGitignoreUntracked(projectPath);
+    await git.raw(['checkout', '-f', node.commitHash]);
+
+    // Re-write .gitignore with the current blacklist since force-checkout may
+    // have restored the version committed at the target milestone.
+    const blacklist = registry.blacklist || [];
+    await fs.writeFile(
+      path.join(projectPath, '.gitignore'),
+      buildGitignore(blacklist),
+      'utf-8',
+    );
 
     // 2. Read the commit_state.json that Git just swapped in
     const commitState = await readJson<CommitState>(
