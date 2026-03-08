@@ -24,6 +24,9 @@ jobs:
         run: npm ci
         working-directory: src/renderer
 
+      - name: Convert icon to ICO
+        run: magick assets/images/icon.png -resize 256x256 assets/images/icon.ico
+
       - name: Build and package
         run: npm run release
         env:
