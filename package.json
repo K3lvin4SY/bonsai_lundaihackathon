@@ -6,7 +6,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "build": "cd src/renderer && npm run build && cd ../.. && tsc",
-    "release": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
+    "release": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
     "start": "npm run build && electron ."
   },
   "build": {
