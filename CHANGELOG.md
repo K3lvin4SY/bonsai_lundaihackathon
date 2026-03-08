@@ -5,12 +5,13 @@
 ### Added
 - **Blacklist** — per-project file/folder exclusion list accessible from Project Settings
   - Blacklisted items are completely ignored: no base copies, no xdelta3 patches, no git tracking
-  - "Add File" and "Add Folder" buttons open a native file picker rooted at the project directory
+  - "Add Files" and "Add Folders" buttons open a native file picker rooted at the project directory with multi-select support
   - Files/folders outside the project directory are rejected
   - Remove items instantly with a trash icon
   - Blacklist entries are persisted in the project registry and survive app restarts
   - `.gitignore` is automatically regenerated when the blacklist changes
 - New IPC channels: `blacklist:get`, `blacklist:set`
+- Multi-select support added to `dialog:open-file` and `dialog:open-directory` via optional `multiSelect` parameter
 
 ## [1.1.0] - 2026-03-08
 

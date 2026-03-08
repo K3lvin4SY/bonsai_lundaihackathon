@@ -50,12 +50,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ---- Dialogs ----
 
   /** Open a native directory picker dialog. */
-  openDirectory: (title?: string, defaultPath?: string) =>
-    ipcRenderer.invoke('dialog:open-directory', title, defaultPath),
+  openDirectory: (title?: string, defaultPath?: string, multiSelect?: boolean) =>
+    ipcRenderer.invoke('dialog:open-directory', title, defaultPath, multiSelect),
 
   /** Open a native file picker dialog. */
-  openFile: (title?: string, defaultPath?: string, filters?: { name: string; extensions: string[] }[]) =>
-    ipcRenderer.invoke('dialog:open-file', title, defaultPath, filters),
+  openFile: (title?: string, defaultPath?: string, filters?: { name: string; extensions: string[] }[], multiSelect?: boolean) =>
+    ipcRenderer.invoke('dialog:open-file', title, defaultPath, filters, multiSelect),
 
   // ---- Settings ----
 

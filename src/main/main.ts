@@ -140,29 +140,33 @@ function registerIpcHandlers(): void {
   // ---- dialog:open-directory ----
   ipcMain.handle(
     'dialog:open-directory',
-    async (_event, title?: string, defaultPath?: string) => {
+    async (_event, title?: string, defaultPath?: string, multiSelect?: boolean) => {
       const win = BrowserWindow.getFocusedWindow();
+      const properties: Electron.OpenDialogOptions['properties'] = ['openDirectory', 'createDirectory'];
+      if (multiSelect) properties.push('multiSelections');
       const result = await dialog.showOpenDialog(win!, {
         title: title || 'Select Directory',
         defaultPath: defaultPath || undefined,
-        properties: ['openDirectory', 'createDirectory'],
+        properties,
       });
-      return { canceled: result.canceled, path: result.filePaths[0] ?? null };
+      return { canceled: result.canceled, path: result.filePaths[0] ?? null, paths: result.filePaths };
     },
   );
 
   // ---- dialog:open-file ----
   ipcMain.handle(
     'dialog:open-file',
-    async (_event, title?: string, defaultPath?: string, filters?: Electron.FileFilter[]) => {
+    async (_event, title?: string, defaultPath?: string, filters?: Electron.FileFilter[], multiSelect?: boolean) => {
       const win = BrowserWindow.getFocusedWindow();
+      const properties: Electron.OpenDialogOptions['properties'] = ['openFile'];
+      if (multiSelect) properties.push('multiSelections');
       const result = await dialog.showOpenDialog(win!, {
         title: title || 'Select File',
         defaultPath: defaultPath || undefined,
-        properties: ['openFile'],
+        properties,
         filters: filters || undefined,
       });
-      return { canceled: result.canceled, path: result.filePaths[0] ?? null };
+      return { canceled: result.canceled, path: result.filePaths[0] ?? null, paths: result.filePaths };
     },
   );
 
