@@ -27,8 +27,10 @@
         "to": "assets/bin"
       }
     ],
+    "icon": "assets/images/icon.png",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/images/icon.ico"
     },
     "mac": {
       "target": "dmg"
