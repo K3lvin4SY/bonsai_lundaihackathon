@@ -29,6 +29,8 @@ import {
   settingsGet,
   settingsSet,
   milestoneSetDescription,
+  projectGetTags,
+  projectSetTags,
 } from './core/vcs';
 import {
   autoWatchStart,
@@ -328,6 +330,24 @@ function registerIpcHandlers(): void {
     'settings:set',
     async (_event, key: string, value: unknown) => {
       return settingsSet(key, value);
+    },
+  );
+
+  // ---- project:get-tags ----
+  ipcMain.handle(
+    'project:get-tags',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:get-tags  path=${projectPath}`);
+      return projectGetTags(projectPath);
+    },
+  );
+
+  // ---- project:set-tags ----
+  ipcMain.handle(
+    'project:set-tags',
+    async (_event, projectPath: string, tags: { label: string; color: string }[]) => {
+      console.log(`[ipc] project:set-tags  path=${projectPath}`);
+      return projectSetTags(projectPath, tags);
     },
   );
 }

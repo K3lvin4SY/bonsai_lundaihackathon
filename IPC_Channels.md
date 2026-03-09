@@ -18,6 +18,8 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`project:rename`](#projectrename) | `projectRename()` | Renderer → Main |
 | [`project:has-changes`](#projecthas-changes) | `projectHasChanges()` | Renderer → Main |
 | [`project:storage-stats`](#projectstorage-stats) | `projectStorageStats()` | Renderer → Main |
+| [`project:get-tags`](#projectget-tags) | `projectGetTags()` | Renderer → Main |
+| [`project:set-tags`](#projectset-tags) | `projectSetTags()` | Renderer → Main |
 | [`milestone:create-initial`](#milestonecreateinitial) | `milestoneCreateInitial()` | Renderer → Main |
 | [`milestone:create`](#milestonecreate) | `milestoneCreate()` | Renderer → Main |
 | [`milestone:restore`](#milestonerestore) | `milestoneRestore()` | Renderer → Main |
@@ -625,7 +627,7 @@ const result = await window.electronAPI.milestoneRename(projectPath, milestoneId
 
 ## `milestone:set-tags`
 
-Replace the tags for a milestone. Tags are an array of short semantic labels. Available tags: `release`, `experiment`, `wip`, `backup`, `archived`.
+Replace the tag list for a milestone. Tags are labels from the project's own custom tag definitions (see [`project:get-tags`](#projectget-tags)). Pass an empty array to clear all tags.
 
 ### Renderer call
 
@@ -639,7 +641,7 @@ const result = await window.electronAPI.milestoneSetTags(projectPath, milestoneI
 |---|---|---|
 | `projectPath` | `string` | Absolute path to the project root directory |
 | `milestoneId` | `string` | UUID of the target milestone |
-| `tags` | `string[]` | Replacement tag list (pass `[]` to clear all tags) |
+| `tags` | `string[]` | Replacement tag list — labels must exist in the project's `customTags` (pass `[]` to clear all tags) |
 
 ### Response
 
@@ -796,6 +798,17 @@ interface ProjectSummary {
 }
 ```
 
+### `TagDefinition`
+
+A custom tag belonging to a project or the global default-tags list.
+
+```ts
+interface TagDefinition {
+  label: string;   // Short display name (e.g. "release", "wip")
+  color: string;   // Hex color string (e.g. "#22c55e")
+}
+```
+
 ### `TreeNode`
 
 A node in the milestone DAG (used by `project:tree`).
@@ -808,14 +821,14 @@ interface TreeNode {
   branch: string;
   createdAt: string;
   children: TreeNode[];
-  tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
+  tags?: string[];       // Labels from the project's customTags
   description?: string;  // Optional longer description
 }
 ```
 
 ### `MilestoneRecord`
 
-Full milestone data (stored in `.app_data/metadata.json`).
+Full milestone data (stored in `global_registry.json`).
 
 ```ts
 interface MilestoneRecord {
@@ -826,7 +839,7 @@ interface MilestoneRecord {
   parentMilestoneId: string | null;
   patchFiles: string[];
   createdAt: string;
-  tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
+  tags?: string[];       // Labels from the project's customTags
   description?: string;  // Optional longer description
 }
 ```
@@ -946,6 +959,7 @@ const result = await window.electronAPI.settingsSet(key, value);
 | `autoWatchDebounceMs` | `number` | `10000` | Milliseconds to wait after the last file change before auto-creating a milestone (min 1000) |
 | `milestoneNameTemplate` | `string` | `""` | Default milestone name template. Supports `{{n}}` (milestone count) and `{{date}}` (locale date) placeholders |
 | `canvasDirection` | `string` | `"horizontal"` | Canvas layout direction: `"horizontal"` (Left → Right) or `"vertical"` (Top → Down) |
+| `defaultTags` | `TagDefinition[]` | `[]` | Default set of custom tags copied into every newly created project. Each entry is `{ label: string; color: string }` |
 
 ---
 
@@ -1155,6 +1169,90 @@ const result = await window.electronAPI.blacklistSet(projectPath, items);
 ```jsonc
 // Request args
 ["/home/user/city-poster", ["renders", "archive/old-assets", "tmp-export.psd"]]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `project:get-tags`
+
+Get the list of custom tag definitions for a project. Tags are stored in the project's `global_registry.json` under `customTags`.
+
+### Renderer call
+
+```ts
+const tags = await window.electronAPI.projectGetTags(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+Array<{ label: string; color: string }>
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+[
+  { "label": "release", "color": "#22c55e" },
+  { "label": "wip",     "color": "#f59e0b" },
+  { "label": "draft",  "color": "#a855f7" }
+]
+```
+
+---
+
+## `project:set-tags`
+
+Replace the entire custom tag list for a project. This is the single source of truth for which tags can be assigned to milestones in this project. Pass an empty array to clear all tags.
+
+> **Note:** Removing a tag definition here does **not** remove it from milestones that already reference it — it simply becomes an orphaned label with no color mapping.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectSetTags(projectPath, tags);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `tags` | `Array<{ label: string; color: string }>` | Full replacement tag list |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+[
+  "/home/user/city-poster",
+  [
+    { "label": "release", "color": "#22c55e" },
+    { "label": "wip",     "color": "#f59e0b" },
+    { "label": "draft",  "color": "#a855f7" }
+  ]
+]
 
 // Response
 {

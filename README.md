@@ -51,7 +51,7 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **Save a Milestone** | Bonsai snapshots your file state. New files get a base copy; existing files get an `xdelta3` patch storing only what changed |
 | **Restore a Milestone** | Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs files by replaying patches. Warns if there are unsaved changes before proceeding |
 | **Branch a Timeline** | Creates a new Git branch and keeps both histories alive on the canvas — restore any past milestone and save forward to start a parallel history |
-| **Tag a Milestone** | Attach semantic labels (release, experiment, wip, backup, archived) to milestones for quick visual filtering |
+| **Tag a Milestone** | Attach custom color-coded labels to milestones from the detail panel or project settings. Tags are per-project — create your own with any color. Define a default set in App Settings to auto-populate new projects |
 | **Describe a Milestone** | Add a longer description to any milestone at creation time or edit it later from the detail panel |
 | **Export a Milestone** | Save any milestone's full file state as a `.zip` archive via native dialog |
 | **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering. Layout direction (horizontal / vertical) is configurable |
@@ -220,3 +220,5 @@ The full IPC channel specification — parameters, response shapes, and usage ex
 | `milestoneExportZip(path, id)` | Export a milestone's file state as a `.zip` archive |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |
+| `projectGetTags(path)` | Get all custom tag definitions for a project |
+| `projectSetTags(path, tags)` | Save the full tag list for a project |

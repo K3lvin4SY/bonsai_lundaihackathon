@@ -128,6 +128,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   blacklistSet: (projectPath: string, items: string[]) =>
     ipcRenderer.invoke('blacklist:set', projectPath, items),
 
+  // ---- Project Tags ----
+
+  /** Get custom tag definitions for a project. */
+  projectGetTags: (projectPath: string) =>
+    ipcRenderer.invoke('project:get-tags', projectPath),
+
+  /** Set custom tag definitions for a project. */
+  projectSetTags: (projectPath: string, tags: { label: string; color: string }[]) =>
+    ipcRenderer.invoke('project:set-tags', projectPath, tags),
+
   /** Listen for auto-watch milestone creation events from the backend. */
   onAutoWatchMilestoneCreated: (callback: (projectPath: string, milestoneId: string) => void) => {
     const handler = (_event: any, projectPath: string, milestoneId: string) => {

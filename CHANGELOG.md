@@ -1,8 +1,20 @@
 # Changelog
 
-## [1.4.0] - 2026-03-08
+## [1.4.0] - 2026-03-09
 
 ### Added
+- **Custom project tags** — tags are no longer hardcoded. Each project stores its own set of tags (`label` + `color`) in its registry. Tags can be created and deleted from:
+  - The **Milestone detail panel** — inline create with a color picker, applied immediately to the open panel
+  - **Project Settings** — full tag management for the current project (add / remove)
+- **Default tags in App Settings** — define a set of default tags (with custom colors) that are automatically copied into every new project. These can be freely customized or cleared from Settings
+- New IPC channels: `project:get-tags`, `project:set-tags`
+- New settings key: `defaultTags` (`TagDefinition[]` — array of `{ label: string; color: string }`)
+
+### Changed
+- Milestone tag pills on canvas nodes now use each tag's stored color instead of a hardcoded palette
+- Milestone tag buttons in the detail panel are driven by the project's own tag list (no built-in tags shipped by default)
+
+### Previous additions in 1.4.0
 - **Milestone descriptions** — attach a longer description to any milestone at creation time or edit it later from the detail panel
 - **Settings page expansion** — three new global settings:
   - **Auto-watch debounce default** — quick-pick the global auto-watch debounce interval from Settings (5 s, 10 s, 30 s, 1 min)

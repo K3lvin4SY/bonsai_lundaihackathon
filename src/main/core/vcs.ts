@@ -117,6 +117,11 @@ const SETTINGS_FILE = path.join(
   'settings.json',
 );
 
+export interface TagDefinition {
+  label: string;
+  color: string;
+}
+
 export interface GlobalRegistry {
   projectId: string;
   projectName: string;
@@ -127,6 +132,7 @@ export interface GlobalRegistry {
   milestones: Record<string, MilestoneNode>;
   autoWatch?: boolean;
   blacklist?: string[];
+  customTags?: TagDefinition[];
 }
 
 export interface MilestoneNode {
@@ -671,6 +677,13 @@ export async function projectCreate(
       'utf-8',
     );
 
+    // Load default tags from app settings
+    let defaultTags: TagDefinition[] = [];
+    try {
+      const val = await settingsGet('defaultTags');
+      if (Array.isArray(val)) defaultTags = val as TagDefinition[];
+    } catch { /* no defaults yet */ }
+
     // Create the global registry (empty DAG)
     const registry: GlobalRegistry = {
       projectId,
@@ -680,6 +693,7 @@ export async function projectCreate(
       activeBranch: 'main',
       branches: ['main'],
       milestones: {},
+      customTags: defaultTags,
     };
     await writeJson(registryPath(projectPath), registry);
 
@@ -1630,6 +1644,40 @@ export async function projectRename(
     return { status: 'success' };
   } catch (err: any) {
     console.error('[vcs] project:rename  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// project:get-tags / project:set-tags
+// ------------------------------------------------------------------
+
+export async function projectGetTags(
+  projectPath: string,
+): Promise<TagDefinition[]> {
+  console.log(`[vcs] project:get-tags  path=${projectPath}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    return registry.customTags || [];
+  } catch (err: any) {
+    console.error('[vcs] project:get-tags  ERROR', err);
+    return [];
+  }
+}
+
+export async function projectSetTags(
+  projectPath: string,
+  tags: TagDefinition[],
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] project:set-tags  path=${projectPath}  tags=${JSON.stringify(tags)}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    registry.customTags = tags;
+    await writeJson(registryPath(projectPath), registry);
+    console.log('[vcs] project:set-tags  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] project:set-tags  ERROR', err);
     return { status: 'error' };
   }
 }
