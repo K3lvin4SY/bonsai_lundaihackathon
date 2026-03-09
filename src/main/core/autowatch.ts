@@ -11,7 +11,7 @@
  * watchers for every project that had auto-watch enabled.
  */
 
-import * as fs from 'fs';
+import * as chokidar from 'chokidar';
 import { BrowserWindow } from 'electron';
 import { milestoneCreate } from './vcs';
 import {
@@ -44,7 +44,7 @@ const IGNORED_NAMES = new Set([
 ]);
 
 interface WatcherEntry {
-  watcher: fs.FSWatcher;
+  watcher: chokidar.FSWatcher;
   debounceTimer: ReturnType<typeof setTimeout> | null;
   /** True while a milestone creation is in-flight (prevents overlapping commits). */
   busy: boolean;
@@ -124,25 +124,19 @@ export async function autoWatchStart(
       blacklist,
     };
 
-    const onChange = (eventType: string, filename: string | null) => {
+    const onChange = (eventType: string, filePath: string) => {
       if (entry.suspended) return;
 
-      // Ignore events from our own bookkeeping directories
-      if (filename) {
-        const topLevel = filename.split(/[\\/]/)[0];
-        if (IGNORED_NAMES.has(topLevel)) return;
-
-        // Ignore events from blacklisted files/folders
-        const normalized = filename.replace(/\\/g, '/');
-        if (entry.blacklist.some((item) => {
-          const normalizedItem = item.replace(/\\/g, '/');
-          return normalized === normalizedItem || normalized.startsWith(normalizedItem + '/');
-        })) {
-          return;
-        }
+      // Ignore events from blacklisted files/folders
+      const normalized = filePath.replace(/\\/g, '/');
+      if (entry.blacklist.some((item) => {
+        const normalizedItem = item.replace(/\\/g, '/');
+        return normalized === normalizedItem || normalized.startsWith(normalizedItem + '/');
+      })) {
+        return;
       }
 
-      console.log(`[autowatch] change detected: ${eventType} ${filename ?? '(unknown)'}`);
+      console.log(`[autowatch] change detected: ${eventType} ${filePath}`);
 
       // If we're currently creating a milestone, just flag for re-trigger
       if (entry.busy) {
@@ -163,7 +157,13 @@ export async function autoWatchStart(
       });
     };
 
-    entry.watcher = fs.watch(projectPath, { recursive: true }, onChange);
+    entry.watcher = chokidar.watch(projectPath, {
+      ignored: Array.from(IGNORED_NAMES).map((name) => `**/${name}/**`),
+      ignoreInitial: true,
+      persistent: true,
+    });
+
+    entry.watcher.on('all', onChange);
 
     entry.watcher.on('error', (err) => {
       console.error(`[autowatch] watcher error for ${projectPath}:`, err);
@@ -202,7 +202,7 @@ export async function autoWatchStop(
     clearTimeout(entry.debounceTimer);
   }
   try {
-    entry.watcher.close();
+    await entry.watcher.close();
   } catch {
     // ignore close errors
   }
@@ -256,7 +256,7 @@ export function autoWatchStopAll(): void {
     const entry = watchers.get(projectPath);
     if (entry) {
       if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
-      try { entry.watcher.close(); } catch {}
+      try { entry.watcher.close().catch(() => {}); } catch {}
     }
   }
   watchers.clear();

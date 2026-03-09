@@ -18,6 +18,7 @@
 - **Configurable auto-watch debounce** — choose 5s, 10s, 30s, or 1 min debounce interval in Project Settings
 - **Project rename** — right-click a project on the Dashboard to rename it
 - **Recent activity on Dashboard** — project cards now show the last milestone message
+- **File watcher reliability** — replaced `fs.watch` in `autowatch.ts` with [chokidar](https://github.com/paulmillr/chokidar), which handles macOS/Linux edge cases, symlinks, deep directory nesting, and rename events more reliably than the native Node.js API
 - New IPC channels: `milestone:storage-size`, `milestone:tracked-files`, `project:has-changes`, `milestone:rename`, `milestone:set-tags`, `milestone:export-zip`, `project:storage-stats`, `project:rename`, `settings:get`, `settings:set`
 
 ## [1.2.0] - 2026-03-08

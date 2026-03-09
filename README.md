@@ -77,6 +77,7 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **simple-git** | Programmatic Git operations (init, commit, checkout, branch) |
 | **xdelta3** | Binary delta encoding / decoding (bundled for Linux, macOS & Windows) |
 | **archiver** | ZIP archive creation for milestone export |
+| **chokidar** | Reliable cross-platform file watching for auto-watch (handles symlinks, renames, and deep nesting) |
 
 ### Frontend — Renderer Process
 

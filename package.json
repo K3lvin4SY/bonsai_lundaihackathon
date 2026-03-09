@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "chokidar": "^3.6.0",
     "simple-git": "^3.32.3"
   }
 }
