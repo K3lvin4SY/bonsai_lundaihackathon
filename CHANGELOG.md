@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1] - 2026-03-09
+
+### Added
+- **About page** — new page accessible from the sidebar (`Info` icon) with:
+  - App identity, description, and design philosophy
+  - Step-by-step "How to use" guide for new users
+  - Key features overview (Timelines, Milestones, Time Travel, Tags, Auto-Watch, Export)
+  - Creator cards with clickable GitHub profile links for all four contributors
+
 ## [1.4.0] - 2026-03-09
 
 ### Added
