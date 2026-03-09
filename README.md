@@ -220,5 +220,6 @@ The full IPC channel specification — parameters, response shapes, and usage ex
 | `milestoneExportZip(path, id)` | Export a milestone's file state as a `.zip` archive |
 | `settingsGet(key)` | Read a persisted app setting |
 | `settingsSet(key, value)` | Update and persist an app setting |
+| `openExternal(url)` | Open an `http`/`https` URL in the user's default browser |
 | `projectGetTags(path)` | Get all custom tag definitions for a project |
 | `projectSetTags(path, tags)` | Save the full tag list for a project |

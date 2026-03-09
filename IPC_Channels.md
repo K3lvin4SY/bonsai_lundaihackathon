@@ -36,6 +36,7 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`autowatch:milestone-created`](#autowatchmilestone-created) | `onAutoWatchMilestoneCreated()` | Main → Renderer |
 | [`settings:get`](#settingsget) | `settingsGet()` | Renderer → Main |
 | [`settings:set`](#settingsset) | `settingsSet()` | Renderer → Main |
+| [`shell:open-external`](#shellopen-external) | `openExternal()` | Renderer → Main |
 | [`blacklist:get`](#blacklistget) | `blacklistGet()` | Renderer → Main |
 | [`blacklist:set`](#blacklistset) | `blacklistSet()` | Renderer → Main |
 
@@ -955,11 +956,40 @@ const result = await window.electronAPI.settingsSet(key, value);
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `branchColorsEnabled` | `boolean` | `false` | Color-code branches on the timeline canvas using the 8-color palette |
+| `branchColorsEnabled` | `boolean` | `true` | Color-code branches on the timeline canvas using the 8-color palette |
+| `minimapEnabled` | `boolean` | `true` | Show the minimap overview panel on the timeline canvas |
 | `autoWatchDebounceMs` | `number` | `10000` | Milliseconds to wait after the last file change before auto-creating a milestone (min 1000) |
 | `milestoneNameTemplate` | `string` | `""` | Default milestone name template. Supports `{{n}}` (milestone count) and `{{date}}` (locale date) placeholders |
 | `canvasDirection` | `string` | `"horizontal"` | Canvas layout direction: `"horizontal"` (Left → Right) or `"vertical"` (Top → Down) |
 | `defaultTags` | `TagDefinition[]` | `[]` | Default set of custom tags copied into every newly created project. Each entry is `{ label: string; color: string }` |
+
+---
+
+## `shell:open-external`
+
+Open a URL in the user's default system browser. Only `http://` and `https://` URLs are permitted — other schemes are silently ignored.
+
+### Renderer call
+
+```ts
+await window.electronAPI.openExternal(url);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `url` | `string` | The URL to open. Must begin with `http://` or `https://` |
+
+### Response
+
+`void`
+
+### Example
+
+```ts
+await window.electronAPI.openExternal('https://github.com/K3lvin4SY');
+```
 
 ---
 

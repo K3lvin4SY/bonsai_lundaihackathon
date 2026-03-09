@@ -152,4 +152,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Current OS platform (e.g. 'darwin', 'win32', 'linux'). */
   platform: process.platform,
+
+  /** Open a URL in the user's default browser. */
+  openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
 });

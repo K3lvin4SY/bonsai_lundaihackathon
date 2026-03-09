@@ -5,7 +5,7 @@
  * renderer (React frontend) calls via window.electronAPI.
  */
 
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import * as path from 'path';
 import {
   projectCreate,
@@ -76,6 +76,14 @@ function createWindow(): void {
 // ---------------------------------------------------------------------------
 
 function registerIpcHandlers(): void {
+  // ---- shell:open-external ----
+  ipcMain.handle('shell:open-external', (_event, url: string) => {
+    // Only allow http/https URLs
+    if (/^https?:\/\//.test(url)) {
+      shell.openExternal(url);
+    }
+  });
+
   // ---- project:create ----
   ipcMain.handle(
     'project:create',
