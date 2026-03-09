@@ -57,6 +57,7 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering. Layout direction (horizontal / vertical) is configurable |
 | **Auto-watch** | Bonsai monitors the project folder and auto-creates milestones when files change. The debounce interval (5 s – 1 min) is configurable per project |
 | **Dashboard Search & Sort** | Search projects by name, path, or last milestone message. Sort by name, last modified, milestone count, or creation date |
+| **Project Archiving** | Archive projects you're not actively working on to declutter the dashboard. Archived projects appear in a collapsible section and auto-watch is paused automatically. Unarchive anytime to bring them back |
 | **Keyboard Shortcuts** | Press `Ctrl+H` / `Cmd+H` on the canvas to view all shortcuts. `Ctrl+M` creates a milestone, `Ctrl+F` searches, `Escape` closes panels |
 
 ### Design Philosophy

@@ -84,6 +84,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   projectRename: (projectPath: string, newName: string) =>
     ipcRenderer.invoke('project:rename', projectPath, newName),
 
+  /** Archive a project (hide from active list, stop auto-watch). */
+  projectArchive: (projectPath: string) =>
+    ipcRenderer.invoke('project:archive', projectPath),
+
+  /** Unarchive a project (restore to active list). */
+  projectUnarchive: (projectPath: string) =>
+    ipcRenderer.invoke('project:unarchive', projectPath),
+
   // ---- Dialogs ----
 
   /** Open a native directory picker dialog. */

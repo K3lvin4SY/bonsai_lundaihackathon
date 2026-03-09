@@ -16,6 +16,8 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`project:list`](#projectlist) | `projectList()` | Renderer → Main |
 | [`project:tree`](#projecttree) | `projectTree()` | Renderer → Main |
 | [`project:rename`](#projectrename) | `projectRename()` | Renderer → Main |
+| [`project:archive`](#projectarchive) | `projectArchive()` | Renderer → Main |
+| [`project:unarchive`](#projectunarchive) | `projectUnarchive()` | Renderer → Main |
 | [`project:has-changes`](#projecthas-changes) | `projectHasChanges()` | Renderer → Main |
 | [`project:storage-stats`](#projectstorage-stats) | `projectStorageStats()` | Renderer → Main |
 | [`project:get-tags`](#projectget-tags) | `projectGetTags()` | Renderer → Main |
@@ -501,6 +503,78 @@ const result = await window.electronAPI.projectRename(projectPath, newName);
 ```jsonc
 // Request args
 ["/home/user/city-poster", "City Poster 2026"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `project:archive`
+
+Archive a project. Sets the `archived` flag in `projects.json` and stops auto-watch if active. Archived projects still appear in `project:list` with `archived: true` but are displayed in a separate collapsed section in the UI.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectArchive(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
+
+// Response
+{
+  "status": "success"
+}
+```
+
+---
+
+## `project:unarchive`
+
+Unarchive a previously archived project. Clears the `archived` flag in `projects.json`, restoring the project to the active list.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.projectUnarchive(projectPath);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster"]
 
 // Response
 {

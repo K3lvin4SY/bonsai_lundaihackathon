@@ -167,6 +167,7 @@ export interface ProjectSummary {
   lastMilestoneAt: string | null;
   milestoneCount: number;
   lastMilestoneMessage: string | null;
+  archived?: boolean;
 }
 
 export interface TreeNode {
@@ -197,6 +198,7 @@ interface ProjectEntry {
   name: string;
   projectPath: string;
   createdAt: string;
+  archived?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -791,6 +793,7 @@ export async function projectList(): Promise<ProjectSummary[]> {
         lastMilestoneAt,
         milestoneCount,
         lastMilestoneMessage,
+        archived: entry.archived || false,
       });
     } catch {
       // Project folder may have been manually deleted — skip it
@@ -1491,6 +1494,46 @@ export async function milestoneSetTags(
     return { status: 'success' };
   } catch (err: any) {
     console.error('[vcs] milestone:set-tags  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// project:archive / project:unarchive
+// ------------------------------------------------------------------
+
+export async function projectArchive(
+  projectPath: string,
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] project:archive  path=${projectPath}`);
+  try {
+    const list = await loadProjectsList();
+    const entry = list.find((e) => e.projectPath === projectPath);
+    if (!entry) throw new Error(`Project not found: ${projectPath}`);
+    entry.archived = true;
+    await saveProjectsList(list);
+    console.log('[vcs] project:archive  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] project:archive  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+export async function projectUnarchive(
+  projectPath: string,
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] project:unarchive  path=${projectPath}`);
+  try {
+    const list = await loadProjectsList();
+    const entry = list.find((e) => e.projectPath === projectPath);
+    if (!entry) throw new Error(`Project not found: ${projectPath}`);
+    entry.archived = false;
+    await saveProjectsList(list);
+    console.log('[vcs] project:unarchive  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] project:unarchive  ERROR', err);
     return { status: 'error' };
   }
 }

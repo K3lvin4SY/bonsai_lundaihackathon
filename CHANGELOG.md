@@ -2,6 +2,10 @@
 
 ## [1.4.2] - 2026-03-09
 
+### Added
+- **Project archiving** — right-click any project on the Dashboard to archive it. Archived projects are hidden from the main list and appear in a collapsible "Archived" section at the bottom. Auto-watch is automatically stopped when a project is archived. Unarchive via right-click to restore it to the active list
+- New IPC channels: `project:archive`, `project:unarchive`
+
 ### Fixed
 - **Sidebar height** — sidebar no longer scrolls when the window is short; it is now always exactly the height of the window using `h-screen overflow-hidden` on the root layout
 - **Settings & About sticky headers** — the back button and page title in both Settings and About are now sticky and remain visible while the page content scrolls beneath them

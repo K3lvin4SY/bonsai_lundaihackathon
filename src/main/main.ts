@@ -26,6 +26,8 @@ import {
   milestoneExportZip,
   projectStorageStats,
   projectRename,
+  projectArchive,
+  projectUnarchive,
   settingsGet,
   settingsSet,
   milestoneSetDescription,
@@ -322,6 +324,26 @@ function registerIpcHandlers(): void {
     async (_event, projectPath: string, newName: string) => {
       console.log(`[ipc] project:rename  path=${projectPath}  newName=${newName}`);
       return projectRename(projectPath, newName);
+    },
+  );
+
+  // ---- project:archive ----
+  ipcMain.handle(
+    'project:archive',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:archive  path=${projectPath}`);
+      // Stop auto-watch when archiving
+      await autoWatchStop(projectPath).catch(() => {});
+      return projectArchive(projectPath);
+    },
+  );
+
+  // ---- project:unarchive ----
+  ipcMain.handle(
+    'project:unarchive',
+    async (_event, projectPath: string) => {
+      console.log(`[ipc] project:unarchive  path=${projectPath}`);
+      return projectUnarchive(projectPath);
     },
   );
 
