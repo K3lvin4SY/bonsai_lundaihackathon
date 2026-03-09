@@ -47,7 +47,7 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    frame: process.platform === 'darwin' || process.platform === 'win32',
+    frame: true,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: process.platform === 'win32' || process.platform === 'linux',
     title: 'Bonsai',
