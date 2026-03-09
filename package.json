@@ -8,7 +8,9 @@
     "build": "cd src/renderer && npm run build && cd ../.. && tsc",
     "generate:icon": "png2icons assets/images/icon.png assets/images/icon -icowe -bc",
     "release": "npm run generate:icon && npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
-    "start": "npm run build && electron ."
+    "start": "npm run build && electron .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "build": {
     "appId": "com.bonsai.app",
@@ -45,12 +47,13 @@
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.37",
     "cross-env": "^10.1.0",
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3",
     "png2icons": "^2.0.1",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "archiver": "^7.0.1",
