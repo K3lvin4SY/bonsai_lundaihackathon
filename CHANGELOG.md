@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.2] - 2026-03-09
+
+### Fixed
+- **Sidebar height** — sidebar no longer scrolls when the window is short; it is now always exactly the height of the window using `h-screen overflow-hidden` on the root layout
+- **Settings & About sticky headers** — the back button and page title in both Settings and About are now sticky and remain visible while the page content scrolls beneath them
+
+### Changed
+- **Settings back button** — updated to match the About page style (rounded icon button with arrow + inline page title) for consistency
+- **Branch colors default** — branch colors are now enabled by default for new users
+- **Minimap default** — minimap is now enabled by default for new users
+
 ## [1.4.1] - 2026-03-09
 
 ### Added
