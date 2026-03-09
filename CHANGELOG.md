@@ -5,6 +5,7 @@
 ### Fixed
 - **Sidebar height** — sidebar no longer scrolls when the window is short; it is now always exactly the height of the window using `h-screen overflow-hidden` on the root layout
 - **Settings & About sticky headers** — the back button and page title in both Settings and About are now sticky and remain visible while the page content scrolls beneath them
+- **Milestone panel flashing on edit** — when editing a milestone tag, name, or description, the panel no longer closes and reopens. Now uses a silent tree refresh (without showing the loading skeleton) so edits update smoothly in place
 
 ### Changed
 - **Settings back button** — updated to match the About page style (rounded icon button with arrow + inline page title) for consistency
