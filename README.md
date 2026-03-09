@@ -54,6 +54,8 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **Tag a Milestone** | Attach custom color-coded labels to milestones from the detail panel or project settings. Tags are per-project — create your own with any color. Define a default set in App Settings to auto-populate new projects |
 | **Describe a Milestone** | Add a longer description to any milestone at creation time or edit it later from the detail panel |
 | **Export a Milestone** | Save any milestone's full file state as a `.zip` archive via native dialog |
+| **Timeline View** | Switch from the graph canvas to a date-based vertical timeline. Milestones are grouped by day (newest first) with cards showing message, description preview, branch, commit hash, time, and tags. Click any card to open the detail panel |
+| **Advanced Search & Filter** | Open the filter panel from the toolbar to search by name/branch, description text, one or more tags (AND logic), and a date range. Filters dim non-matching nodes on the canvas and non-matching cards in the timeline view |
 | **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering. Layout direction (horizontal / vertical) is configurable |
 | **Auto-watch** | Bonsai monitors the project folder and auto-creates milestones when files change. The debounce interval (5 s – 1 min) is configurable per project |
 | **Dashboard Search & Sort** | Search projects by name, path, or last milestone message. Sort by name, last modified, milestone count, or creation date |

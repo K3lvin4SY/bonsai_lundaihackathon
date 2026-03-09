@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0] - 2026-03-09
+
+### Added
+- **Timeline view** — a date-based vertical timeline of milestones, available as an alternative to the graph canvas. Milestones are grouped by day (newest first), each card showing the message, description preview, branch, commit hash, time, and tags. Branch colors and tag colors carry over. Click any card to open the full milestone detail panel. Switch between Graph and Timeline using the new **Graph / Timeline** toggle in the top bar
+- **Advanced search & filter panel** — the toolbar search button now opens a dropdown filter panel beneath the top bar with:
+  - **Name / branch search** — filters milestone nodes/cards by message or branch name
+  - **Description search** — searches the full milestone description text
+  - **Tag filter** — popover with per-project tags; select one or more to match milestones that contain all chosen tags
+  - **Date range** — From and To date pickers to narrow results to a specific period
+  - Active filter count indicator, match / total display, and one-click clear-all
+  - Filters apply to **both** the graph canvas (dims non-matching nodes to 25% opacity) and the timeline view (dims non-matching cards)
+
+### Changed
+- Search button replaced by a **Filter** (sliders) icon button that toggles the advanced filter panel; highlights when any filter is active
+- `Ctrl+F` / `Cmd+F` shortcut now opens the advanced filter panel
+
 ## [1.4.2] - 2026-03-09
 
 ### Added
