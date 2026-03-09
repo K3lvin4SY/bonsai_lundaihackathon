@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0] - 2026-03-08
+
+### Added
+- **Milestone descriptions** — attach a longer description to any milestone at creation time or edit it later from the detail panel
+- **Settings page expansion** — three new global settings:
+  - **Auto-watch debounce default** — quick-pick the global auto-watch debounce interval from Settings (5 s, 10 s, 30 s, 1 min)
+  - **Milestone name template** — configure the default milestone name using `{{n}}` (count) and `{{date}}` (locale date) placeholders
+  - **Canvas layout direction** — choose between horizontal (Left → Right) and vertical (Top → Down) milestone graph layout
+- **Dashboard sorting & filtering** — search projects by name, path, or last milestone message; sort by name, last modified, milestone count, or date created
+- **Keyboard shortcut panel** — press `Ctrl+H` / `Cmd+H` anywhere on the canvas to see a quick-reference dialog of all keyboard shortcuts (`Ctrl+M`, `Ctrl+F`, `Escape`, `Ctrl+H`)
+- New IPC channel: `milestone:set-description`
+- New settings keys: `milestoneNameTemplate`, `canvasDirection`
+
 ## [1.3.0] - 2026-03-08
 
 ### Added

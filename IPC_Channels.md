@@ -24,6 +24,7 @@ The renderer accesses these channels via `window.electronAPI.<method>()` (expose
 | [`milestone:delete`](#milestonedelete) | `milestoneDelete()` | Renderer → Main |
 | [`milestone:rename`](#milestonerename) | `milestoneRename()` | Renderer → Main |
 | [`milestone:set-tags`](#milestoneset-tags) | `milestoneSetTags()` | Renderer → Main |
+| [`milestone:set-description`](#milestoneset-description) | `milestoneSetDescription()` | Renderer → Main |
 | [`milestone:storage-size`](#milestonestorage-size) | `milestoneStorageSize()` | Renderer → Main |
 | [`milestone:tracked-files`](#milestonetracked-files) | `milestoneTrackedFiles()` | Renderer → Main |
 | [`milestone:export-zip`](#milestoneexport-zip) | `milestoneExportZip()` | Renderer → Main |
@@ -207,6 +208,7 @@ const data = await window.electronAPI.projectTree(projectPath);
   createdAt: string;        // ISO 8601
   children: TreeNode[];     // Nested child milestones
   tags?: string[];          // Optional semantic tags (e.g. "release", "wip")
+  description?: string;     // Optional longer description
 }
 ```
 
@@ -222,6 +224,7 @@ const data = await window.electronAPI.projectTree(projectPath);
   patchFiles: string[];     // Relative paths inside .app_data/patches/
   createdAt: string;        // ISO 8601
   tags?: string[];          // Optional semantic tags
+  description?: string;     // Optional longer description
 }
 ```
 
@@ -321,7 +324,7 @@ Create the first milestone for a project. Copies binary files to the base folder
 ### Renderer call
 
 ```ts
-const result = await window.electronAPI.milestoneCreateInitial(projectPath, message);
+const result = await window.electronAPI.milestoneCreateInitial(projectPath, message, description?);
 ```
 
 ### Parameters
@@ -330,6 +333,7 @@ const result = await window.electronAPI.milestoneCreateInitial(projectPath, mess
 |---|---|---|
 | `projectPath` | `string` | Absolute path to the project root directory (binary files are scanned from here) |
 | `message` | `string` | Description for the initial milestone |
+| `description` | `string?` | Optional longer description for the milestone |
 
 ### Response
 
@@ -358,7 +362,7 @@ Create a subsequent milestone. Runs `xdelta3` to compute binary diffs against th
 ### Renderer call
 
 ```ts
-const result = await window.electronAPI.milestoneCreate(projectPath, message);
+const result = await window.electronAPI.milestoneCreate(projectPath, message, description?);
 ```
 
 ### Parameters
@@ -367,6 +371,7 @@ const result = await window.electronAPI.milestoneCreate(projectPath, message);
 |---|---|---|
 | `projectPath` | `string` | Absolute path to the project root directory |
 | `message` | `string` | Description for this milestone |
+| `description` | `string?` | Optional longer description for the milestone |
 
 ### Response
 
@@ -804,6 +809,7 @@ interface TreeNode {
   createdAt: string;
   children: TreeNode[];
   tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
+  description?: string;  // Optional longer description
 }
 ```
 
@@ -821,6 +827,45 @@ interface MilestoneRecord {
   patchFiles: string[];
   createdAt: string;
   tags?: string[];   // Semantic labels: "release" | "experiment" | "wip" | "backup" | "archived"
+  description?: string;  // Optional longer description
+}
+```
+
+---
+
+## `milestone:set-description`
+
+Set or update the description for an existing milestone.
+
+### Renderer call
+
+```ts
+const result = await window.electronAPI.milestoneSetDescription(projectPath, milestoneId, description);
+```
+
+### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `projectPath` | `string` | Absolute path to the project root directory |
+| `milestoneId` | `string` | UUID of the target milestone |
+| `description` | `string` | The new description text (pass `""` to clear) |
+
+### Response
+
+```ts
+{ status: 'success' | 'error' }
+```
+
+### Example
+
+```jsonc
+// Request args
+["/home/user/city-poster", "bbb-222", "Added the skyline silhouette layer with gradient masking"]
+
+// Response
+{
+  "status": "success"
 }
 ```
 
@@ -899,6 +944,8 @@ const result = await window.electronAPI.settingsSet(key, value);
 |---|---|---|---|
 | `branchColorsEnabled` | `boolean` | `false` | Color-code branches on the timeline canvas using the 8-color palette |
 | `autoWatchDebounceMs` | `number` | `10000` | Milliseconds to wait after the last file change before auto-creating a milestone (min 1000) |
+| `milestoneNameTemplate` | `string` | `""` | Default milestone name template. Supports `{{n}}` (milestone count) and `{{date}}` (locale date) placeholders |
+| `canvasDirection` | `string` | `"horizontal"` | Canvas layout direction: `"horizontal"` (Left → Right) or `"vertical"` (Top → Down) |
 
 ---
 

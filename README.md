@@ -52,9 +52,12 @@ Under the hood, a smart hybrid storage strategy keeps things fast and lean:
 | **Restore a Milestone** | Bonsai checks out the right Git commit, reads the tiny blueprint, and reconstructs files by replaying patches. Warns if there are unsaved changes before proceeding |
 | **Branch a Timeline** | Creates a new Git branch and keeps both histories alive on the canvas — restore any past milestone and save forward to start a parallel history |
 | **Tag a Milestone** | Attach semantic labels (release, experiment, wip, backup, archived) to milestones for quick visual filtering |
+| **Describe a Milestone** | Add a longer description to any milestone at creation time or edit it later from the detail panel |
 | **Export a Milestone** | Save any milestone's full file state as a `.zip` archive via native dialog |
-| **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering |
+| **Visual Canvas** | Every milestone and timeline is rendered as an interactive node graph — branch-colored edges, tag pills, a MiniMap, and a search bar for instant filtering. Layout direction (horizontal / vertical) is configurable |
 | **Auto-watch** | Bonsai monitors the project folder and auto-creates milestones when files change. The debounce interval (5 s – 1 min) is configurable per project |
+| **Dashboard Search & Sort** | Search projects by name, path, or last milestone message. Sort by name, last modified, milestone count, or creation date |
+| **Keyboard Shortcuts** | Press `Ctrl+H` / `Cmd+H` on the canvas to view all shortcuts. `Ctrl+M` creates a milestone, `Ctrl+F` searches, `Escape` closes panels |
 
 ### Design Philosophy
 
@@ -198,6 +201,7 @@ The full IPC channel specification — parameters, response shapes, and usage ex
 | `projectList()` | List all registered projects |
 | `projectTree(path)` | Fetch the full milestone DAG for the canvas |
 | `milestoneCreate(path, message)` | Save the current state as a new milestone |
+| `milestoneSetDescription(path, id, desc)` | Set or update the description for a milestone |
 | `milestoneRestore(path, milestoneId)` | Rewind working files to a past milestone |
 | `milestoneDelete(path, milestoneId)` | Delete a leaf milestone |
 | `autoWatchStart(path)` | Start auto-watching a project folder for changes |

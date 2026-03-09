@@ -28,6 +28,7 @@ import {
   projectRename,
   settingsGet,
   settingsSet,
+  milestoneSetDescription,
 } from './core/vcs';
 import {
   autoWatchStart,
@@ -109,18 +110,18 @@ function registerIpcHandlers(): void {
   // ---- milestone:create-initial ----
   ipcMain.handle(
     'milestone:create-initial',
-    async (_event, projectPath: string, message: string) => {
+    async (_event, projectPath: string, message: string, description?: string) => {
       console.log(`[ipc] milestone:create-initial  path=${projectPath}`);
-      return milestoneCreateInitial(projectPath, message);
+      return milestoneCreateInitial(projectPath, message, description);
     },
   );
 
   // ---- milestone:create ----
   ipcMain.handle(
     'milestone:create',
-    async (_event, projectPath: string, message: string) => {
+    async (_event, projectPath: string, message: string, description?: string) => {
       console.log(`[ipc] milestone:create  path=${projectPath}`);
-      return milestoneCreate(projectPath, message);
+      return milestoneCreate(projectPath, message, description);
     },
   );
 
@@ -267,6 +268,15 @@ function registerIpcHandlers(): void {
     async (_event, projectPath: string, milestoneId: string, tags: string[]) => {
       console.log(`[ipc] milestone:set-tags  path=${projectPath}  id=${milestoneId}`);
       return milestoneSetTags(projectPath, milestoneId, tags);
+    },
+  );
+
+  // ---- milestone:set-description ----
+  ipcMain.handle(
+    'milestone:set-description',
+    async (_event, projectPath: string, milestoneId: string, description: string) => {
+      console.log(`[ipc] milestone:set-description  path=${projectPath}  id=${milestoneId}`);
+      return milestoneSetDescription(projectPath, milestoneId, description);
     },
   );
 

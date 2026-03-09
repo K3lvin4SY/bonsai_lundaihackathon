@@ -32,12 +32,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   milestoneCreateInitial: (
     projectPath: string,
     message: string,
+    description?: string,
   ) =>
-    ipcRenderer.invoke('milestone:create-initial', projectPath, message),
+    ipcRenderer.invoke('milestone:create-initial', projectPath, message, description),
 
   /** Create a subsequent milestone (diff, patch, commit). */
-  milestoneCreate: (projectPath: string, message: string) =>
-    ipcRenderer.invoke('milestone:create', projectPath, message),
+  milestoneCreate: (projectPath: string, message: string, description?: string) =>
+    ipcRenderer.invoke('milestone:create', projectPath, message, description),
 
   /** Restore working directory to a specific milestone. */
   milestoneRestore: (projectPath: string, milestoneId: string) =>
@@ -62,6 +63,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Set tags on a milestone. */
   milestoneSetTags: (projectPath: string, milestoneId: string, tags: string[]) =>
     ipcRenderer.invoke('milestone:set-tags', projectPath, milestoneId, tags),
+
+  /** Set description on a milestone. */
+  milestoneSetDescription: (projectPath: string, milestoneId: string, description: string) =>
+    ipcRenderer.invoke('milestone:set-description', projectPath, milestoneId, description),
 
   /** Export a milestone's reconstructed files as a ZIP. */
   milestoneExportZip: (projectPath: string, milestoneId: string) =>

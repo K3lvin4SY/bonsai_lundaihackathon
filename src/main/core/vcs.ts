@@ -132,6 +132,7 @@ export interface GlobalRegistry {
 export interface MilestoneNode {
   milestoneId: string;
   message: string;
+  description?: string;
   commitHash: string;
   branch: string;
   parentMilestoneId: string | null;
@@ -165,6 +166,7 @@ export interface ProjectSummary {
 export interface TreeNode {
   milestoneId: string;
   message: string;
+  description?: string;
   commitHash: string;
   branch: string;
   createdAt: string;
@@ -175,6 +177,7 @@ export interface TreeNode {
 export interface MilestoneRecord {
   milestoneId: string;
   message: string;
+  description?: string;
   tags?: string[];
   commitHash: string;
   branch: string;
@@ -811,6 +814,7 @@ export async function projectTree(
       return {
         milestoneId: node.milestoneId,
         message: node.message,
+        description: node.description,
         tags: node.tags,
         commitHash: node.commitHash,
         branch: node.branch,
@@ -827,6 +831,7 @@ export async function projectTree(
     return {
       milestoneId: node.milestoneId,
       message: node.message,
+      description: node.description,
       commitHash: node.commitHash,
       branch: node.branch,
       createdAt: node.createdAt,
@@ -856,6 +861,7 @@ export async function projectTree(
 export async function milestoneCreateInitial(
   projectPath: string,
   message: string,
+  description?: string,
 ): Promise<{ milestoneId: string }> {
   console.log(`[vcs] milestone:create-initial  project=${projectPath}  msg="${message}"`);
 
@@ -925,6 +931,7 @@ export async function milestoneCreateInitial(
   registry.milestones[milestoneId] = {
     milestoneId,
     message: message || 'Initial milestone',
+    description: description || undefined,
     commitHash,
     branch: registry.activeBranch,
     parentMilestoneId: null,
@@ -945,6 +952,7 @@ export async function milestoneCreateInitial(
 export async function milestoneCreate(
   projectPath: string,
   message: string,
+  description?: string,
 ): Promise<{ milestoneId: string }> {
   console.log(`[vcs] milestone:create  project=${projectPath}  msg="${message}"`);
 
@@ -1090,6 +1098,7 @@ export async function milestoneCreate(
   registry.milestones[milestoneId] = {
     milestoneId,
     message: message || `Milestone ${milestoneId}`,
+    description: description || undefined,
     commitHash,
     branch: branchName,
     parentMilestoneId: parentId,
@@ -1468,6 +1477,32 @@ export async function milestoneSetTags(
     return { status: 'success' };
   } catch (err: any) {
     console.error('[vcs] milestone:set-tags  ERROR', err);
+    return { status: 'error' };
+  }
+}
+
+// ------------------------------------------------------------------
+// milestone:set-description
+// ------------------------------------------------------------------
+
+export async function milestoneSetDescription(
+  projectPath: string,
+  milestoneId: string,
+  description: string,
+): Promise<{ status: 'success' | 'error' }> {
+  console.log(`[vcs] milestone:set-description  project=${projectPath}  milestone=${milestoneId}`);
+  try {
+    const registry = await readJson<GlobalRegistry>(registryPath(projectPath));
+    const node = registry.milestones[milestoneId];
+    if (!node) throw new Error(`Milestone ${milestoneId} not found`);
+
+    node.description = description || undefined;
+    await writeJson(registryPath(projectPath), registry);
+
+    console.log('[vcs] milestone:set-description  SUCCESS');
+    return { status: 'success' };
+  } catch (err: any) {
+    console.error('[vcs] milestone:set-description  ERROR', err);
     return { status: 'error' };
   }
 }
