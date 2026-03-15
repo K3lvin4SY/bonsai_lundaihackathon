@@ -6,6 +6,17 @@
 
 **The safety net for creative workflows — minus the developer complexity.**
 
+> [!WARNING]
+> This repository has been **discontinued** and is being **archived**.
+> Future development continues in the new, expanded Bonsai project:
+> **https://github.com/K3lvin4SY/bonsai**
+
+## Project Status
+
+- Status: Archived / discontinued
+- Maintenance: No new features or fixes are planned in this repository
+- Next home: https://github.com/K3lvin4SY/bonsai
+
 <br/>
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-CC0000?style=for-the-badge)
