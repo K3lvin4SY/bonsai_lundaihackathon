@@ -6,16 +6,18 @@
 
 **The safety net for creative workflows — minus the developer complexity.**
 
-> [!WARNING]
-> This repository has been **discontinued** and is being **archived**.
-> Future development continues in the new, expanded Bonsai project:
-> **https://github.com/K3lvin4SY/bonsai**
+> [!IMPORTANT]  
+> **Bonsai has evolved!** This repository serves as a static archive of our early open-source development. 
+> The Bonsai project is highly active, but development has transitioned to a private repository to support its growth as a dedicated product. 
+> 
+> You can download the latest, fully-featured version of Bonsai at our new home: 
+> **[bonsai.pm](https://bonsai.pm/)**
 
 ## Project Status
 
-- Status: Archived / discontinued
-- Maintenance: No new features or fixes are planned in this repository
-- Next home: https://github.com/K3lvin4SY/bonsai
+- **Repository Status:** Archived (Legacy open-source version)
+- **Active Development:** Ongoing (Closed-source)
+- **Official Website & Downloads:** [bonsai.pm](https://bonsai.pm/)
 
 <br/>
 
